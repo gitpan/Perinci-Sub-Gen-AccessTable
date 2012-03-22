@@ -1,0 +1,342 @@
+NAME
+    Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci
+    metadata) to access table data
+
+VERSION
+    version 0.07
+
+SYNOPSIS
+    In list_countries.pl:
+
+     #!perl
+     use strict;
+     use warnings;
+     use Perinci::CmdLine;
+     use Perinci::Sub::Gen::AccessTable qw(gen_read_table_func);
+
+     our %SPEC;
+
+     my $countries = [
+         ['cn', 'China', 'Cina', [qw/panda/]],
+         ['id', 'Indonesia', 'Indonesia', [qw/bali tropical/]],
+         ['sg', 'Singapore', 'Singapura', [qw/tropical/]],
+         ['us', 'United States of America', 'Amerika Serikat', [qw//]],
+     ];
+
+     my $res = gen_read_table_func(
+         table_data => $countries,
+         table_spec => {
+             summary => 'List of countries',
+             columns => {
+                 id => {
+                     schema => 'str*',
+                     summary => 'ISO 2-letter code for the country',
+                     index => 0,
+                     sortable => 1,
+                 },
+                 en_name => {
+                     schema => 'str*',
+                     summary => 'English name',
+                     index => 1,
+                     sortable => 1,
+                 },
+                 id_name => {
+                     schema => 'str*',
+                     summary => 'Indonesian name',
+                     index => 2,
+                     sortable => 1,
+                 },
+                 tags => {
+                     schema => 'array*',
+                     summary => 'Keywords/tags',
+                     index => 3,
+                     sortable => 0,
+                 },
+             },
+             pk => 'id',
+         },
+     );
+     die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
+     *list_countries       = $res->[2]{code};
+     $SPEC{list_countries} = $res->[2]{meta};
+
+     Perinci::CmdLine->new(url=>'/main/list_countries')->run;
+
+    Now you can do:
+
+     # list all countries, by default only PK column is shown
+     $ list_countries.pl --nopretty
+     cn
+     id
+     sg
+     us
+
+     # show as json, randomize order
+     $ list_countries.pl --json --random
+     ["id","us","sg","cn"]
+
+     # only list countries which are tagged as 'tropical', sort by id_name column in
+     # descending order, show all columns (--detail)
+     $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
+     .---------------------------------------------.
+     | en_name   | id | id_name   | tags           |
+     +-----------+----+-----------+----------------+
+     | Singapore | sg | Singapura | tropical       |
+     | Indonesia | id | Indonesia | bali, tropical |
+     '-----------+----+-----------+----------------'
+
+     # show only certain fields, limit number of rows, return in YAML format
+     $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
+     ---
+     - id: cn
+       en_name: China
+     - id: id
+       en_name: Indonesia
+
+DESCRIPTION
+    This module is useful when you want to expose a table data (an array of
+    hashrefs, an array of arrays, or external data like a SQL table) as an
+    API function. This module will generate a function that accepts
+    arguments for specifying fields, filtering, sorting, and paging; along
+    with its Rinci metadata. The resulting function can then be run via
+    command-line using Perinci::CmdLine (as demonstrated in Synopsis), or
+    served via HTTP using Perinci::Access::HTTP::Server, or consumed
+    normally by Perl programs.
+
+    Internally, the This module uses Log::Any for logging.
+
+CAVEATS
+    It is often not a good idea to expose your database schema directly as
+    API.
+
+FAQ
+SEE ALSO
+    Rinci
+
+    Perinci::CmdLine
+
+FUNCTIONS
+  gen_read_table_func(%args) -> [status, msg, result, meta]
+    Generate function (and its metadata) to read table data.
+
+    The generated function acts like a simple single table SQL SELECT query,
+    featuring filtering, ordering, and paging, but using arguments as the
+    'query language'. The generated function is suitable for exposing a
+    table data from an API function.
+
+    The resulting function returns an array of results/records and accepts
+    these arguments.
+
+    *   with_field_names => BOOL (default 1)
+
+          By default function will return each record as arrays (e.g. ['ID',
+          'Indonesia', 'Jakarta']. AoH. If this argument is set to 0, then function will
+          return AoA instead.
+
+    *   detail => BOOL (default 0)
+
+          This is a field selection option. By default, function will return PK column
+          only. If this argument is set to true, then all columns will be returned.
+
+    *   fields => ARRAY
+
+          This is a field selection option. If you only want certain fields, specify
+          them here.
+
+    *   result_limit => INT (default undef)
+
+    *   result_start => INT (default 1)
+
+          The B<result_limit> and B<result_start> arguments are paging options, they work
+          like LIMIT clause in SQL, except that index starts at 1 and not 0.
+
+    *   random => BOOL (default 0)
+
+          The random argument is an ordering option. If set to true, order of rows
+          returned will be shuffled first. This happened before paging.
+
+    *   sort => STR
+
+          The sort argument is an ordering option, containing name of field. A - prefix
+          signifies descending instead of ascending order. Multiple fields are allowed,
+          separated by comma.
+
+    *   q => STR
+
+          A filtering option. By default, all fields except those specified with
+          searchable=0 will be searched using simple case-insensitive string search.
+          There are a few options to customize this, using these gen arguments:
+          B<word_search>, B<case_insensitive_search>, and B<custom_search>.
+
+    *   Filter arguments
+
+          They will be generated for each column, except when column has 'filterable'
+          clause set to false.
+
+          Undef values will not match any filter, just like NULL in SQL.
+
+    *   FIELD.is and FIELD.isnt arguments for each field. Only records with
+        field equalling (or not equalling) value exactly ('==' or 'eq') will
+        be included. If doesn't clash with other function arguments, FIELD
+        will also be added as an alias for FIELD.is.
+
+    *   FIELD.has and FIELD.lacks array arguments for each set field. Only
+        records with field having or lacking certain value will be included.
+
+    *   FIELD.min and FIELD.max for each int/float/str field. Only records
+        with field greater/equal than, or less/equal than a certain value
+        will be included.
+
+    *   FIELD.contains and FIELD.not_contains for each str field. Only
+        records with field containing (or not containing) certain value
+        (substring) will be included.
+
+    *   FIELD.matches and FIELD.not_matches for each str field. Only records
+        with field matching (or not matching) certain value (regex) (or will
+        be included. Function will return 400 if regex is invalid. These
+        arguments will not be generated if 'filterable_regex' clause in
+        column specification is set to 0.
+
+    Arguments ('*' denotes required arguments):
+
+    *   case_insensitive_search => *bool* (default: 1)
+
+        Decide whether generated function will perform case-insensitive
+        search.
+
+    *   custom_search => *code*
+
+        Supply custom searching for generated function.
+
+        Code will be supplied ($row, $q, $opts) where $q is the search term
+        (from the function argument 'q') and $row the hashref row value.
+        $opts is {ci=>0|1}. Code should return true if row matches search
+        term.
+
+    *   default_detail => *bool*
+
+        Supply default 'detail' value for function arg spec.
+
+    *   default_fields => *str*
+
+        Supply default 'fields' value for function arg spec.
+
+    *   default_random => *bool*
+
+        Supply default 'random' value in generated function's metadata.
+
+    *   default_result_limit => *int*
+
+        Supply default 'result_limit' value in generated function's
+        metadata.
+
+    *   default_sort => *str*
+
+        Supply default 'sort' value in generated function's metadata.
+
+    *   default_with_field_names => *bool*
+
+        Supply default 'with_field_names' value in generated function's
+        metadata.
+
+    *   enable_search => *bool* (default: 1)
+
+        Decide whether generated function will support searching (argument
+        q).
+
+    *   langs => *array* (default: ["en_US"])
+
+        Choose language for function metadata.
+
+        This function can generate metadata containing text from one or more
+        languages. For example if you set 'langs' to ['enUS', 'idID'] then
+        the generated function metadata might look something like this:
+
+            {
+                v => 1.1,
+                args => {
+                    random => {
+                        summary => 'Random order of results', # English
+                        "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
+                        ...
+                    },
+                    ...
+                },
+                ...
+            }
+
+    *   table_data* => *any*
+
+        Data.
+
+        Table data is either an AoH or AoA. Or you can also pass a Perl
+        subroutine (see below).
+
+        Passing a subroutine lets you fetch data dynamically and from
+        arbitrary source (e.g. DBI table or other external sources). The
+        subroutine will be called with these arguments ('$query') and is
+        expected to return a hashref like this {data => DATA, paged=>BOOL,
+        filtered=>BOOL, sorted=>BOOL, columns_selected=>BOOL,
+        randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is
+        assumed to be already paged and won't be paged again; likewise for
+        filtered, sorted, and columns selected. These are useful for example
+        with DBI result, where requested data is already
+        filtered/sorted/column selected/paged/randomized via appropriate SQL
+        query. This way, the generated function will not attempt to
+        duplicate the efforts.
+
+        '$query' is a hashref which contains information about the query,
+        e.g. 'args' (the original arguments passed to the generated
+        function, e.g. {random=>1, resultlimit=1, field1>match=>'f.+'}),
+        'mentionedfields' which lists fields that are mentioned in either
+        filtering arguments or fields or ordering, 'requestedfields' (fields
+        mentioned in list of fields to be returned), 'sortfields' (fields
+        mentioned in sort arguments), 'filterfields' (fields mentioned in
+        filter arguments).
+
+    *   table_spec* => *hash*
+
+        Table specification.
+
+        A hashref with these required keys: 'columns', 'pk'. 'Columns' is a
+        hashref of column specification with column name as keys, while 'pk'
+        specifies which column is to be designated as the primary key.
+        Currently only single-column PK is allowed.
+
+        Column specification. A hashref with these required keys: 'schema'
+        (a Sah schema), 'index' (an integer starting from 0 that specifies
+        position of column in the data, especially required with AoA data)
+        and these optional clauses: 'sortable' (a boolean stating whether
+        column can be sorted, default is true), 'filterable' (a boolean
+        stating whether column can be mentioned in filter options, default
+        is true).
+
+    *   word_search => *bool* (default: 0)
+
+        Decide whether generated function will perform word searching
+        instead of string searching.
+
+        For example, if search term is 'pine' and column value is 'green
+        pineapple', search will match if wordsearch=false, but won't match
+        under wordsearch.
+
+        This will not have effect under 'custom_search'.
+
+    Return value:
+
+    Returns an enveloped result (an array). First element (status) is an
+    integer containing HTTP status code (200 means OK, 4xx caller error, 5xx
+    function error). Second element (msg) is a string containing error
+    message, or 'OK' if status is 200. Third element (result) is optional,
+    the actual result. Fourth element (meta) is called result metadata and
+    is optional, a hash that contains extra information.
+
+AUTHOR
+    Steven Haryanto <stevenharyanto@gmail.com>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2012 by Steven Haryanto.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
+
