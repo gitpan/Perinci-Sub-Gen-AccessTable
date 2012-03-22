@@ -17,7 +17,7 @@ our @EXPORT_OK = qw(gen_read_table_func);
 
 with 'SHARYANTO::Role::I18NMany';
 
-our $VERSION = '0.08'; # VERSION
+our $VERSION = '0.09'; # VERSION
 
 our %SPEC;
 
@@ -196,7 +196,6 @@ _
         langs       => $langs,
         name        => 'q',
         type        => 'str',
-        default     => 1,
         cat_name    => 'filtering',
         cat_text    => 'filtering',
         summary     => "Search",
@@ -216,6 +215,7 @@ _
             langs       => $langs,
             name        => "$cname.is",
             type        => "$ctype*",
+            default     => $opts->{"default_$cname.is"},
             cat_name    => "filtering-for-$cname",
             cat_text    => "filtering for [_1]",
             summary     => "Only return records where the '[_1]' field ".
@@ -230,6 +230,7 @@ _
                 langs       => $langs,
                 name        => "$cname.has",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.has"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -240,6 +241,7 @@ _
                 langs       => $langs,
                 name        => "$cname.lacks",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.lacks"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -252,6 +254,7 @@ _
                 langs       => $langs,
                 name        => "$cname.min",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.min"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -262,6 +265,7 @@ _
                 langs       => $langs,
                 name        => "$cname.max",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.max"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -272,6 +276,7 @@ _
                 langs       => $langs,
                 name        => "$cname.xmin",
                 type        => [array => {of=>'str*'}],
+                default     => $opts->{"default_$cname.xmin"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -282,6 +287,7 @@ _
                 langs       => $langs,
                 name        => "$cname.xmax",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.xmax"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -294,6 +300,7 @@ _
                 langs       => $langs,
                 name        => "$cname.contains",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.contains"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -304,6 +311,7 @@ _
                 langs       => $langs,
                 name        => "$cname.not_contains",
                 type        => $ctype,
+                default     => $opts->{"default_$cname.not_contains"},
                 cat_name    => "filtering-for-$cname",
                 cat_text    => "filtering for [_1]",
                 summary     => "Only return records where the '[_1]' field ".
@@ -315,6 +323,7 @@ _
                     langs       => $langs,
                     name        => "$cname.matches",
                     type        => $ctype,
+                    default     => $opts->{"default_$cname.matches"},
                     cat_name    => "filtering-for-$cname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field ".
@@ -325,6 +334,7 @@ _
                     langs       => $langs,
                     name        => "$cname.not_matches",
                     type        => $ctype,
+                    default     => $opts->{"default_$cname.not_matches"},
                     cat_name    => "filtering-for-$cname",
                     cat_text    => "filtering for [_1]",
                     summary => "Only return records where the '[_1]' field " .
@@ -333,6 +343,14 @@ _
             }
         }
     } # for each cspec
+
+    # custom filters
+    my $cff = $opts->{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        $fargs->{$cfn} and return [
+            400, "Custom filter '$cfn' clashes with another argument"];
+        $fargs->{$cfn} = $cf->{meta};
+    }
 
     [200, "OK", $func_meta];
 }
@@ -452,6 +470,15 @@ sub __parse_query {
     $query->{filters}       = \@filters;
     $query->{filter_fields} = \@filter_fields;
 
+    my $cff = $opts->{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        next unless defined $args->{$cfn};
+        push @filters, [$cf->{columns}, 'call', [$cf->{code}, $args->{$cfn}]];
+        for (@{$cf->{columns} // []}) {
+            push @filter_fields, $_ if !($_ ~~ @filter_fields);
+        }
+    }
+
     my @searchable_fields = grep {
         !defined($cspecs->{$_}{searchable}) || $cspecs->{$_}{searchable}
         } @columns;
@@ -517,28 +544,24 @@ sub _gen_func {
     my ($self, $table_spec, $opts, $table_data, $func_meta) = @_;
 
     my $cspecs = $table_spec->{columns};
+    my $fargs  = $func_meta->{args};
     my $func = sub {
         my %args = @_;
 
-        $args{detail}           //= $opts->{default_detail};
-        $args{fields}           //= $opts->{default_fields};
-        $args{with_field_names} //= $opts->{default_with_field_names};
-        $args{sort}             //= $opts->{default_sort};
-        $args{random}           //= $opts->{default_random};
-        $args{result_limit}     //= $opts->{default_result_limit};
-
         # XXX schema
-        if (defined $args{fields}) {
-            $args{fields} = [split /\s*[,;]\s*/, $args{fields}]
-                unless ref($args{fields}) eq 'ARRAY';
+        while (my ($ak, $av) = each %$fargs) {
+            if (defined $av->{schema}[1]{default}) {
+                $args{$ak} //= $av->{schema}[1]{default};
+            }
+            if ($ak eq 'fields' && defined($args{$ak})) {
+                $args{$ak} = [split /\s*[,;]\s*/, $args{$ak}]
+                    unless ref($args{$ak}) eq 'ARRAY';
+            }
         }
 
         my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
         return $res unless $res->[0] == 200;
         my $query = $res->[2];
-
-        $query->{filters} = $opts->{default_filters}
-            if defined($opts->{default_filters}) && !@{$query->{filters}};
 
         # retrieve data
         my $data;
@@ -621,6 +644,8 @@ sub _gen_func {
                     next ROW unless index($row_h->{$c}, $opn) >= 0;
                 } elsif ($op eq '!pos') {
                     next ROW if index($row_h->{$c}, $opn) >= 0;
+                } elsif ($op eq 'call') {
+                    next ROW unless $opn->[0]->($row_h, $opn->[1]);
                 } else {
                     die "BUG: Unknown op $op";
                 }
@@ -886,13 +911,6 @@ _
             schema => 'str',
             summary => "Supply default 'fields' value for function arg spec",
         },
-        # not yet documented
-        #default_filters => {
-        #    schema => ['array' => {
-        #        of => 'array*', # XXX filter structure
-        #    }],
-        #    summary => "Supply default filters",
-        #},
         default_with_field_names => {
             schema => 'bool',
             summary => "Supply default 'with_field_names' ".
@@ -935,6 +953,18 @@ This will not have effect under 'custom_search'.
 
 _
         },
+        default_arg_values => {
+            schema => 'hash',
+            summary => "Specify defaults for generated function's arguments",
+            description => <<'_',
+
+Can be used to supply default filters, e.g.
+
+    # limit years for credit card expiration date
+    { "year.min" => $curyear, "year.max" => $curyear+10, }
+
+_
+        },
         case_insensitive_search => {
             schema => ['bool' => {
                 default => 1,
@@ -950,6 +980,24 @@ _
 Code will be supplied ($row, $q, $opts) where $q is the search term (from the
 function argument 'q') and $row the hashref row value. $opts is {ci=>0|1}. Code
 should return true if row matches search term.
+
+_
+        },
+        custom_filters => {
+            schema => [hash => {of=>['hash*' => {keys=>{
+                'code'=>'code*', 'meta'=>'hash*'}}]}],
+            summary => 'Supply custom filters',
+            description => <<'_',
+
+A hash of filter name and definitions. Filter name will be used as generated
+function's argument and must not clash with other arguments. Filter definition
+is a hash containing these keys: *meta* (hash, argument metadata), *code*,
+*columns* (array, list of table columns related to this field).
+
+Code will be called for each row to be filtered and will be supplied ($row, $v,
+$opts) where $v is the filter value (from the function argument) and $row the
+hashref row value. $opts is currently empty. Code should return true if row
+satisfies the filter.
 
 _
         },
@@ -989,7 +1037,15 @@ sub _gen_read_table_func {
         $cspec->{schema} //= 'any';
         $cspec->{schema} = __parse_schema($cspec->{schema});
     }
+    #  make each custom filter's schema normalized
+    my $cff = $args{custom_filters} // {};
+    while (my ($cfn, $cf) = each %$cff) {
+        $cf->{meta} //= {};
+        $cf->{meta}{schema} //= 'any';
+        $cf->{meta}{schema} = __parse_schema($cf->{meta}{schema});
+    }
 
+    my $dav = $args{default_arg_values} // {};
     my $opts = {
         langs                      => $args{langs} // ['en_US'],
         default_detail             => $args{default_detail},
@@ -998,11 +1054,12 @@ sub _gen_read_table_func {
         default_sort               => $args{default_sort},
         default_random             => $args{default_random},
         default_result_limit       => $args{default_result_limit},
-        default_filters            => $args{default_filters},
         enable_search              => $args{enable_search} // 1,
         custom_search              => $args{custom_search},
         word_search                => $args{word_search},
         case_insensitive_search    => $args{case_insensitive_search} // 1,
+        (map { ("default_$_" => $dav->{$_}) } keys %$dav),
+        custom_filters             => $cff,
     };
 
     my $res;
@@ -1032,7 +1089,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.08
+version 0.09
 
 =head1 SYNOPSIS
 
@@ -1301,6 +1358,20 @@ Arguments ('*' denotes required arguments):
 
 Decide whether generated function will perform case-insensitive search.
 
+=item * B<custom_filters> => I<hash>
+
+Supply custom filters.
+
+A hash of filter name and definitions. Filter name will be used as generated
+function's argument and must not clash with other arguments. Filter definition
+is a hash containing these keys: B<meta> (hash, argument metadata), B<code>,
+B<columns> (array, list of table columns related to this field).
+
+Code will be called for each row to be filtered and will be supplied ($row, $v,
+$opts) where $v is the filter value (from the function argument) and $row the
+hashref row value. $opts is currently empty. Code should return true if row
+satisfies the filter.
+
 =item * B<custom_search> => I<code>
 
 Supply custom searching for generated function.
@@ -1308,6 +1379,15 @@ Supply custom searching for generated function.
 Code will be supplied ($row, $q, $opts) where $q is the search term (from the
 function argument 'q') and $row the hashref row value. $opts is {ci=>0|1}. Code
 should return true if row matches search term.
+
+=item * B<default_arg_values> => I<hash>
+
+Specify defaults for generated function's arguments.
+
+Can be used to supply default filters, e.g.
+
+    # limit years for credit card expiration date
+    { "year.min" => $curyear, "year.max" => $curyear+10, }
 
 =item * B<default_detail> => I<bool>
 

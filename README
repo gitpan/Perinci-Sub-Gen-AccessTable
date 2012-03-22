@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.08
+    version 0.09
 
 SYNOPSIS
     In list_countries.pl:
@@ -204,6 +204,21 @@ FUNCTIONS
         Decide whether generated function will perform case-insensitive
         search.
 
+    *   custom_filters => *hash*
+
+        Supply custom filters.
+
+        A hash of filter name and definitions. Filter name will be used as
+        generated function's argument and must not clash with other
+        arguments. Filter definition is a hash containing these keys: meta
+        (hash, argument metadata), code, columns (array, list of table
+        columns related to this field).
+
+        Code will be called for each row to be filtered and will be supplied
+        ($row, $v, $opts) where $v is the filter value (from the function
+        argument) and $row the hashref row value. $opts is currently empty.
+        Code should return true if row satisfies the filter.
+
     *   custom_search => *code*
 
         Supply custom searching for generated function.
@@ -212,6 +227,15 @@ FUNCTIONS
         (from the function argument 'q') and $row the hashref row value.
         $opts is {ci=>0|1}. Code should return true if row matches search
         term.
+
+    *   default_arg_values => *hash*
+
+        Specify defaults for generated function's arguments.
+
+        Can be used to supply default filters, e.g.
+
+            # limit years for credit card expiration date
+            { "year.min" => $curyear, "year.max" => $curyear+10, }
 
     *   default_detail => *bool*
 

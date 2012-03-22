@@ -6,6 +6,7 @@ use 5.010;
 use strict;
 use warnings;
 use FindBin '$Bin';
+use Log::Any '$log';
 use lib $Bin, "$Bin/t";
 
 use Test::More 0.96;
@@ -348,6 +349,54 @@ test_gen(
         my $func = $res->[2]{code};
 
         test_query($func, {q=>"whatever"}, 2, 'search whatever');
+    },
+);
+
+test_gen(
+    name => 'default_arg_values',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {default_arg_values => {"f.min"=>1}},
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {}, 2, 'default value for f.min');
+        test_query($func, {"f.min"=>0}, 4, 'default value for f.min');
+    },
+);
+
+test_gen(
+    name => 'custom_filters',
+    table_data => $table_data,
+    table_spec => $table_spec,
+    other_args => {
+        custom_filters => {
+            cf1=>{meta=>{schema=>'float'},
+                  columns=>[qw/f/],
+                  code=>sub {
+                      my ($row, $v, $opts) = @_;
+                      $log->tracef("inside cf1, row=%s, v=%s", $row, $v);
+                      $row->{f} >= $v*2;
+                  }},
+            cf2=>{meta=>{schema=>['int*'=>{default=>1}]},
+                  columns=>[qw/i/],
+                  code=>sub {
+                      my ($row, $v, $opts) = @_;
+                      $log->tracef("inside cf1, row=%s, v=%s", $row, $v);
+                      $row->{i} > $v;
+                  }},
+        }
+    },
+    status => 200,
+    post_test => sub {
+        my ($res) = @_;
+        my $func = $res->[2]{code};
+
+        test_query($func, {}, 2, 'default value for cf2');
+        test_query($func, {cf2=>0}, 3, 'cf2');
+        test_query($func, {cf1=>0.5, cf2=>0}, 1, 'cf1');
     },
 );
 
