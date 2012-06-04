@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.11
+    version 0.12
 
 SYNOPSIS
     In list_countries.pl:
@@ -24,8 +24,10 @@ SYNOPSIS
      ];
 
      my $res = gen_read_table_func(
-         table_data => $countries,
-         table_spec => {
+         summary     => 'func summary',     # opt
+         description => 'func description', # opt
+         table_data  => $countries,
+         table_spec  => {
              summary => 'List of countries',
              fields => {
                  id => {
@@ -270,6 +272,10 @@ FUNCTIONS
         Supply default 'with_field_names' value in generated function's
         metadata.
 
+    *   description* => *str*
+
+        Generated function's description.
+
     *   enable_search => *bool* (default: 1)
 
         Decide whether generated function will support searching (argument
@@ -295,6 +301,10 @@ FUNCTIONS
                 },
                 ...
             }
+
+    *   summary* => *str*
+
+        Generated function's summary.
 
     *   table_data* => *any*
 
