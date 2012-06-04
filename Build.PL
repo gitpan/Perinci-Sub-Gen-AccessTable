@@ -7,7 +7,8 @@ use Module::Build 0.3601;
 
 my %module_build_args = (
   "build_requires" => {
-    "Module::Build" => "0.3601"
+    "Module::Build" => "0.3601",
+    "Test::More" => "0.96"
   },
   "configure_requires" => {
     "Module::Build" => "0.3601"
@@ -17,7 +18,7 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci-Sub-Gen-AccessTable",
-  "dist_version" => "0.10",
+  "dist_version" => "0.11",
   "license" => "perl",
   "module_name" => "Perinci::Sub::Gen::AccessTable",
   "recommends" => {},
@@ -29,9 +30,8 @@ my %module_build_args = (
     "Lingua::ID::Nums2Words" => 0,
     "Moo" => 0,
     "Perinci::Sub::GetArgs::Argv" => "0.13",
-    "Rinci" => "1.1.13",
+    "Rinci" => "v1.1.13",
     "SHARYANTO::Role::I18NMany" => "0.17",
-    "Test::More" => "0.96",
     "perl" => "5.010001"
   },
   "script_files" => []

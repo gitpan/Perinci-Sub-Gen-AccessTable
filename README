@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.10
+    version 0.11
 
 SYNOPSIS
     In list_countries.pl:
@@ -27,7 +27,7 @@ SYNOPSIS
          table_data => $countries,
          table_spec => {
              summary => 'List of countries',
-             columns => {
+             fields => {
                  id => {
                      schema => 'str*',
                      summary => 'ISO 2-letter code for the country',
@@ -64,7 +64,7 @@ SYNOPSIS
 
     Now you can do:
 
-     # list all countries, by default only PK column is shown
+     # list all countries, by default only PK field is shown
      $ list_countries.pl --nopretty
      cn
      id
@@ -75,8 +75,8 @@ SYNOPSIS
      $ list_countries.pl --json --random
      ["id","us","sg","cn"]
 
-     # only list countries which are tagged as 'tropical', sort by id_name column in
-     # descending order, show all columns (--detail)
+     # only list countries which are tagged as 'tropical', sort by id_name field in
+     # descending order, show all fields (--detail)
      $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
      .---------------------------------------------.
      | en_name   | id | id_name   | tags           |
@@ -85,7 +85,7 @@ SYNOPSIS
      | Indonesia | id | Indonesia | bali, tropical |
      '-----------+----+-----------+----------------'
 
-     # show only certain fields, limit number of rows, return in YAML format
+     # show only certain fields, limit number of records, return in YAML format
      $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
      ---
      - id: cn
@@ -129,30 +129,36 @@ FUNCTIONS
 
     *   with_field_names => BOOL (default 1)
 
-          By default function will return each record as arrays (e.g. ['ID',
-          'Indonesia', 'Jakarta']. AoH. If this argument is set to 0, then function will
-          return AoA instead.
+          If set to 1, function will return records of field values along with field
+          names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+          set to 0, then function will return record containing field values without
+          field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
 
     *   detail => BOOL (default 0)
 
-          This is a field selection option. By default, function will return PK column
-          only. If this argument is set to true, then all columns will be returned.
+          This is a field selection option. If set to 0, function will return PK field
+          only. If this argument is set to 1, then all fields will be returned (see also
+          B<fields> to instruct function to return some fields only).
 
     *   fields => ARRAY
 
           This is a field selection option. If you only want certain fields, specify
-          them here.
+          them here (see also B<detail>).
 
     *   result_limit => INT (default undef)
 
     *   result_start => INT (default 1)
 
           The B<result_limit> and B<result_start> arguments are paging options, they work
-          like LIMIT clause in SQL, except that index starts at 1 and not 0.
+          like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+          example, to return the first 20 records in the result, set B<result_limit> to
+
+    *   To return the next 20 records, set result_limit to 20 and
+        result_start to 21.
 
     *   random => BOOL (default 0)
 
-          The random argument is an ordering option. If set to true, order of rows
+          The random argument is an ordering option. If set to true, order of records
           returned will be shuffled first. This happened before paging.
 
     *   sort => STR
@@ -170,7 +176,7 @@ FUNCTIONS
 
     *   Filter arguments
 
-          They will be generated for each column, except when column has 'filterable'
+          They will be generated for each field, except when field has 'filterable'
           clause set to false.
 
           Undef values will not match any filter, just like NULL in SQL.
@@ -195,7 +201,7 @@ FUNCTIONS
         with field matching (or not matching) certain value (regex) (or will
         be included. Function will return 400 if regex is invalid. These
         arguments will not be generated if 'filterable_regex' clause in
-        column specification is set to 0.
+        field specification is set to 0.
 
     Arguments ('*' denotes required arguments):
 
@@ -211,22 +217,23 @@ FUNCTIONS
         A hash of filter name and definitions. Filter name will be used as
         generated function's argument and must not clash with other
         arguments. Filter definition is a hash containing these keys: meta
-        (hash, argument metadata), code, columns (array, list of table
-        columns related to this field).
+        (hash, argument metadata), code, fields (array, list of table fields
+        related to this field).
 
-        Code will be called for each row to be filtered and will be supplied
-        ($row, $v, $opts) where $v is the filter value (from the function
-        argument) and $row the hashref row value. $opts is currently empty.
-        Code should return true if row satisfies the filter.
+        Code will be called for each record to be filtered and will be
+        supplied ($r, $v, $opts) where $v is the filter value (from the
+        function argument) and $r the hashref record value. $opts is
+        currently empty. Code should return true if record satisfies the
+        filter.
 
     *   custom_search => *code*
 
         Supply custom searching for generated function.
 
-        Code will be supplied ($row, $q, $opts) where $q is the search term
-        (from the function argument 'q') and $row the hashref row value.
-        $opts is {ci=>0|1}. Code should return true if row matches search
-        term.
+        Code will be supplied ($r, $q, $opts) where $r is the record
+        (hashref), $q is the search term (from the function argument 'q'),
+        and $opts is {ci=>0|1}. Code should return true if record matches
+        search term.
 
     *   default_arg_values => *hash*
 
@@ -300,12 +307,12 @@ FUNCTIONS
         arbitrary source (e.g. DBI table or other external sources). The
         subroutine will be called with these arguments ('$query') and is
         expected to return a hashref like this {data => DATA, paged=>BOOL,
-        filtered=>BOOL, sorted=>BOOL, columns_selected=>BOOL,
+        filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
         randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is
         assumed to be already paged and won't be paged again; likewise for
-        filtered, sorted, and columns selected. These are useful for example
+        filtered, sorted, and fields selected. These are useful for example
         with DBI result, where requested data is already
-        filtered/sorted/column selected/paged/randomized via appropriate SQL
+        filtered/sorted/field selected/paged/randomized via appropriate SQL
         query. This way, the generated function will not attempt to
         duplicate the efforts.
 
@@ -322,25 +329,24 @@ FUNCTIONS
 
         Table specification.
 
-        A hashref with these required keys: 'columns', 'pk'. 'Columns' is a
-        hashref of column specification with column name as keys, while 'pk'
-        specifies which column is to be designated as the primary key.
-        Currently only single-column PK is allowed.
+        A hashref with these required keys: 'fields', 'pk'. 'fields' is a
+        hashref of field specification with field name as keys, while 'pk'
+        specifies which field is to be designated as the primary key.
+        Currently only single-field PK is allowed.
 
-        Column specification. A hashref with these required keys: 'schema'
-        (a Sah schema), 'index' (an integer starting from 0 that specifies
-        position of column in the data, especially required with AoA data)
-        and these optional clauses: 'sortable' (a boolean stating whether
-        column can be sorted, default is true), 'filterable' (a boolean
-        stating whether column can be mentioned in filter options, default
-        is true).
+        Field specification. A hashref with these required keys: 'schema' (a
+        Sah schema), 'index' (an integer starting from 0 that specifies
+        position of field in the record, required with AoA data) and these
+        optional clauses: 'sortable' (a boolean stating whether field can be
+        sorted, default is true), 'filterable' (a boolean stating whether
+        field can be mentioned in filter options, default is true).
 
     *   word_search => *bool* (default: 0)
 
         Decide whether generated function will perform word searching
         instead of string searching.
 
-        For example, if search term is 'pine' and column value is 'green
+        For example, if search term is 'pine' and field value is 'green
         pineapple', search will match if wordsearch=false, but won't match
         under wordsearch.
 
