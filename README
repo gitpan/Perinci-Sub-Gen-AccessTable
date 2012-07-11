@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.12
+    version 0.13
 
 SYNOPSIS
     In list_countries.pl:
@@ -24,6 +24,7 @@ SYNOPSIS
      ];
 
      my $res = gen_read_table_func(
+         name        => 'list_countries',
          summary     => 'func summary',     # opt
          description => 'func description', # opt
          table_data  => $countries,
@@ -36,13 +37,13 @@ SYNOPSIS
                      index => 0,
                      sortable => 1,
                  },
-                 en_name => {
+                 eng_name => {
                      schema => 'str*',
                      summary => 'English name',
                      index => 1,
                      sortable => 1,
                  },
-                 id_name => {
+                 ind_name => {
                      schema => 'str*',
                      summary => 'Indonesian name',
                      index => 2,
@@ -59,41 +60,41 @@ SYNOPSIS
          },
      );
      die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
-     *list_countries       = $res->[2]{code};
-     $SPEC{list_countries} = $res->[2]{meta};
 
      Perinci::CmdLine->new(url=>'/main/list_countries')->run;
 
     Now you can do:
 
      # list all countries, by default only PK field is shown
-     $ list_countries.pl --nopretty
+     $ list_countries.pl --format=text-simple
      cn
      id
      sg
      us
 
      # show as json, randomize order
-     $ list_countries.pl --json --random
+     $ list_countries.pl --format=json --random
      ["id","us","sg","cn"]
 
-     # only list countries which are tagged as 'tropical', sort by id_name field in
+     # only list countries which are tagged as 'tropical', sort by ind_name field in
      # descending order, show all fields (--detail)
-     $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
+     $ list_countries.pl --detail --sort -ind_name --tags-has '[tropical]'
      .---------------------------------------------.
-     | en_name   | id | id_name   | tags           |
+     | eng_name  | id | ind_name  | tags           |
      +-----------+----+-----------+----------------+
      | Singapore | sg | Singapura | tropical       |
      | Indonesia | id | Indonesia | bali, tropical |
      '-----------+----+-----------+----------------'
 
      # show only certain fields, limit number of records, return in YAML format
-     $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
-     ---
-     - id: cn
-       en_name: China
-     - id: id
-       en_name: Indonesia
+     $ list_countries.pl --fields '[id, eng_name]' --result-limit 2 --format=yaml
+     - 200
+     - OK
+     -
+       - id: cn
+         eng_name: China
+       - id: id
+         eng_name: Indonesia
 
 DESCRIPTION
     This module is useful when you want to expose a table data (an array of
@@ -105,7 +106,7 @@ DESCRIPTION
     served via HTTP using Perinci::Access::HTTP::Server, or consumed
     normally by Perl programs.
 
-    Internally, the This module uses Log::Any for logging.
+    This module uses Log::Any for logging.
 
 CAVEATS
     It is often not a good idea to expose your database schema directly as
@@ -117,7 +118,12 @@ SEE ALSO
 
     Perinci::CmdLine
 
+DESCRIPTION
+    This module has Rinci metadata.
+
 FUNCTIONS
+    None are exported by default, but they are exportable.
+
   gen_read_table_func(%args) -> [status, msg, result, meta]
     Generate function (and its metadata) to read table data.
 
@@ -129,52 +135,52 @@ FUNCTIONS
     The resulting function returns an array of results/records and accepts
     these arguments.
 
-    *   with_field_names => BOOL (default 1)
+    *   *with_field_names* => BOOL (default 1)
 
           If set to 1, function will return records of field values along with field
           names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
           set to 0, then function will return record containing field values without
           field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
 
-    *   detail => BOOL (default 0)
+    *   *detail* => BOOL (default 0)
 
           This is a field selection option. If set to 0, function will return PK field
           only. If this argument is set to 1, then all fields will be returned (see also
-          B<fields> to instruct function to return some fields only).
+          I<fields> to instruct function to return some fields only).
 
-    *   fields => ARRAY
+    *   *fields* => ARRAY
 
           This is a field selection option. If you only want certain fields, specify
-          them here (see also B<detail>).
+          them here (see also I<detail>).
 
-    *   result_limit => INT (default undef)
+    *   *result_limit* => INT (default undef)
 
-    *   result_start => INT (default 1)
+    *   *result_start* => INT (default 1)
 
-          The B<result_limit> and B<result_start> arguments are paging options, they work
+          The I<result_limit> and I<result_start> arguments are paging options, they work
           like LIMIT clause in SQL, except that index starts at 1 and not 0. For
-          example, to return the first 20 records in the result, set B<result_limit> to
+          example, to return the first 20 records in the result, set I<result_limit> to
 
-    *   To return the next 20 records, set result_limit to 20 and
-        result_start to 21.
+    *   To return the next 20 records, set *result_limit* to 20 and
+        *result_start* to 21.
 
-    *   random => BOOL (default 0)
+    *   *random* => BOOL (default 0)
 
           The random argument is an ordering option. If set to true, order of records
           returned will be shuffled first. This happened before paging.
 
-    *   sort => STR
+    *   *sort* => STR
 
           The sort argument is an ordering option, containing name of field. A - prefix
           signifies descending instead of ascending order. Multiple fields are allowed,
           separated by comma.
 
-    *   q => STR
+    *   *q* => STR
 
           A filtering option. By default, all fields except those specified with
           searchable=0 will be searched using simple case-insensitive string search.
           There are a few options to customize this, using these gen arguments:
-          B<word_search>, B<case_insensitive_search>, and B<custom_search>.
+          I<word_search>, I<case_insensitive_search>, and I<custom_search>.
 
     *   Filter arguments
 
@@ -183,27 +189,28 @@ FUNCTIONS
 
           Undef values will not match any filter, just like NULL in SQL.
 
-    *   FIELD.is and FIELD.isnt arguments for each field. Only records with
-        field equalling (or not equalling) value exactly ('==' or 'eq') will
-        be included. If doesn't clash with other function arguments, FIELD
-        will also be added as an alias for FIELD.is.
+    *   *FIELD.is* and *FIELD.isnt* arguments for each field. Only records
+        with field equalling (or not equalling) value exactly ('==' or 'eq')
+        will be included. If doesn't clash with other function arguments,
+        *FIELD* will also be added as an alias for *FIELD.is*.
 
-    *   FIELD.has and FIELD.lacks array arguments for each set field. Only
-        records with field having or lacking certain value will be included.
+    *   *FIELD.has* and *FIELD.lacks* array arguments for each set field.
+        Only records with field having or lacking certain value will be
+        included.
 
-    *   FIELD.min and FIELD.max for each int/float/str field. Only records
-        with field greater/equal than, or less/equal than a certain value
-        will be included.
+    *   *FIELD.min* and *FIELD.max* for each int/float/str field. Only
+        records with field greater/equal than, or less/equal than a certain
+        value will be included.
 
-    *   FIELD.contains and FIELD.not_contains for each str field. Only
+    *   *FIELD.contains* and *FIELD.not_contains* for each str field. Only
         records with field containing (or not containing) certain value
         (substring) will be included.
 
-    *   FIELD.matches and FIELD.not_matches for each str field. Only records
-        with field matching (or not matching) certain value (regex) (or will
-        be included. Function will return 400 if regex is invalid. These
-        arguments will not be generated if 'filterable_regex' clause in
-        field specification is set to 0.
+    *   *FIELD.matches* and *FIELD.not_matches* for each str field. Only
+        records with field matching (or not matching) certain value (regex)
+        (or will be included. Function will return 400 if regex is invalid.
+        These arguments will not be generated if 'filterable_regex' clause
+        in field specification is set to 0.
 
     Arguments ('*' denotes required arguments):
 
@@ -218,9 +225,9 @@ FUNCTIONS
 
         A hash of filter name and definitions. Filter name will be used as
         generated function's argument and must not clash with other
-        arguments. Filter definition is a hash containing these keys: meta
-        (hash, argument metadata), code, fields (array, list of table fields
-        related to this field).
+        arguments. Filter definition is a hash containing these keys: *meta*
+        (hash, argument metadata), *code*, *fields* (array, list of table
+        fields related to this field).
 
         Code will be called for each record to be filtered and will be
         supplied ($r, $v, $opts) where $v is the filter value (from the
@@ -281,12 +288,20 @@ FUNCTIONS
         Decide whether generated function will support searching (argument
         q).
 
+    *   install => *bool* (default: 1)
+
+        Whether to install generated function (and metadata).
+
+        By default, generated function will be installed to the specified
+        (or caller's) package, as well as its generated metadata into %SPEC.
+        Set this argument to false to skip installing.
+
     *   langs => *array* (default: ["en_US"])
 
         Choose language for function metadata.
 
         This function can generate metadata containing text from one or more
-        languages. For example if you set 'langs' to ['enUS', 'idID'] then
+        languages. For example if you set 'langs' to ['en*US', 'id*ID'] then
         the generated function metadata might look something like this:
 
             {
@@ -301,6 +316,19 @@ FUNCTIONS
                 },
                 ...
             }
+
+    *   name* => *str*
+
+        Generated function's name, e.g. `myfunc`.
+
+    *   package* => *str*
+
+        Generated function's package, e.g. `My::Package`.
+
+        This is needed mostly for installing the function. You usually don't
+        need to supply this if you set "install" to false.
+
+        If not specified, caller's package will be used by default.
 
     *   summary* => *str*
 
@@ -317,23 +345,23 @@ FUNCTIONS
         arbitrary source (e.g. DBI table or other external sources). The
         subroutine will be called with these arguments ('$query') and is
         expected to return a hashref like this {data => DATA, paged=>BOOL,
-        filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
-        randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is
-        assumed to be already paged and won't be paged again; likewise for
-        filtered, sorted, and fields selected. These are useful for example
-        with DBI result, where requested data is already
-        filtered/sorted/field selected/paged/randomized via appropriate SQL
-        query. This way, the generated function will not attempt to
-        duplicate the efforts.
+        filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL}. DATA is AoA or
+        AoH. If paged is set to 1, data is assumed to be already paged and
+        won't be paged again; likewise for filtered, sorted, and fields
+        selected. These are useful for example with DBI result, where
+        requested data is already filtered/sorted (including
+        randomized)/field selected/paged via appropriate SQL query. This
+        way, the generated function will not attempt to duplicate the
+        efforts.
 
         '$query' is a hashref which contains information about the query,
         e.g. 'args' (the original arguments passed to the generated
-        function, e.g. {random=>1, resultlimit=1, field1>match=>'f.+'}),
-        'mentionedfields' which lists fields that are mentioned in either
-        filtering arguments or fields or ordering, 'requestedfields' (fields
-        mentioned in list of fields to be returned), 'sortfields' (fields
-        mentioned in sort arguments), 'filterfields' (fields mentioned in
-        filter arguments).
+        function, e.g. {random=>1, result*limit=*1, field1>match=>'f.+'}),
+        'mentioned*fields' which lists fields that are mentioned in either
+        filtering arguments or fields or ordering, 'requested*fields'
+        (fields mentioned in list of fields to be returned), 'sort*fields'
+        (fields mentioned in sort arguments), 'filter*fields' (fields
+        mentioned in filter arguments).
 
     *   table_spec* => *hash*
 
@@ -357,8 +385,8 @@ FUNCTIONS
         instead of string searching.
 
         For example, if search term is 'pine' and field value is 'green
-        pineapple', search will match if wordsearch=false, but won't match
-        under wordsearch.
+        pineapple', search will match if word*search=false, but won't match
+        under word*search.
 
         This will not have effect under 'custom_search'.
 

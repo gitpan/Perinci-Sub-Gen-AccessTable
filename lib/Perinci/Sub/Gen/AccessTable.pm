@@ -9,6 +9,7 @@ use Moo; # we go OO just for the I18N, we don't store attributes, etc
 use Data::Clone;
 use Data::Sah;
 use List::Util qw(shuffle);
+use Perinci::Sub::Gen::common;
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
 use Exporter;
@@ -17,7 +18,7 @@ our @EXPORT_OK = qw(gen_read_table_func);
 
 with 'SHARYANTO::Role::I18NMany';
 
-our $VERSION = '0.12'; # VERSION
+our $VERSION = '0.13'; # VERSION
 
 our %SPEC;
 
@@ -836,14 +837,7 @@ arguments.
 
 _
     args => {
-        summary => {
-            summary => "Generated function's summary",
-            schema => 'str*',
-        },
-        description => {
-            summary => "Generated function's description",
-            schema => 'str*',
-        },
+        %Perinci::Sub::Gen::common::common_args,
         table_data => {
             req => 1,
             schema => 'any*',
@@ -856,12 +850,12 @@ below).
 Passing a subroutine lets you fetch data dynamically and from arbitrary source
 (e.g. DBI table or other external sources). The subroutine will be called with
 these arguments ('$query') and is expected to return a hashref like this {data
-=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
-randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is assumed to
-be already paged and won't be paged again; likewise for filtered, sorted, and
-fields selected. These are useful for example with DBI result, where requested
-data is already filtered/sorted/field selected/paged/randomized via appropriate
-SQL query. This way, the generated function will not attempt to duplicate the
+=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL}. DATA
+is AoA or AoH. If paged is set to 1, data is assumed to be already paged and
+won't be paged again; likewise for filtered, sorted, and fields selected. These
+are useful for example with DBI result, where requested data is already
+filtered/sorted (including randomized)/field selected/paged via appropriate SQL
+query. This way, the generated function will not attempt to duplicate the
 efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
@@ -1028,6 +1022,18 @@ sub _gen_read_table_func {
     my ($self, %args) = @_;
 
     # XXX schema
+    my ($uqname, $package);
+    my $fqname = $args{name};
+    return [400, "Please specify name"] unless $fqname;
+    my @caller = caller;
+    if ($fqname =~ /(.+)::(.+)/) {
+        $package = $1;
+        $uqname  = $2;
+    } else {
+        $package = $args{package} // $caller[0];
+        $uqname  = $fqname;
+        $fqname  = "$package\::$uqname";
+    }
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
     __is_aoa($table_data) or __is_aoh($table_data) or ref($table_data) eq 'CODE'
@@ -1089,6 +1095,12 @@ sub _gen_read_table_func {
         unless $res->[0] == 200;
     my $func = $res->[2];
 
+    if ($args{install} // 1) {
+        no strict 'refs';
+        *{ $fqname } = $func;
+        ${$package . "::SPEC"}{$uqname} = $func_meta;
+    }
+
     [200, "OK", {meta=>$func_meta, code=>$func}];
 }
 
@@ -1105,7 +1117,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.12
+version 0.13
 
 =head1 SYNOPSIS
 
@@ -1127,6 +1139,7 @@ In list_countries.pl:
  ];
 
  my $res = gen_read_table_func(
+     name        => 'list_countries',
      summary     => 'func summary',     # opt
      description => 'func description', # opt
      table_data  => $countries,
@@ -1139,13 +1152,13 @@ In list_countries.pl:
                  index => 0,
                  sortable => 1,
              },
-             en_name => {
+             eng_name => {
                  schema => 'str*',
                  summary => 'English name',
                  index => 1,
                  sortable => 1,
              },
-             id_name => {
+             ind_name => {
                  schema => 'str*',
                  summary => 'Indonesian name',
                  index => 2,
@@ -1162,41 +1175,41 @@ In list_countries.pl:
      },
  );
  die "Can't generate function: $res->[0] - $res->[1]" unless $res->[0] == 200;
- *list_countries       = $res->[2]{code};
- $SPEC{list_countries} = $res->[2]{meta};
 
  Perinci::CmdLine->new(url=>'/main/list_countries')->run;
 
 Now you can do:
 
  # list all countries, by default only PK field is shown
- $ list_countries.pl --nopretty
+ $ list_countries.pl --format=text-simple
  cn
  id
  sg
  us
 
  # show as json, randomize order
- $ list_countries.pl --json --random
+ $ list_countries.pl --format=json --random
  ["id","us","sg","cn"]
 
- # only list countries which are tagged as 'tropical', sort by id_name field in
+ # only list countries which are tagged as 'tropical', sort by ind_name field in
  # descending order, show all fields (--detail)
- $ list_countries.pl --detail --sort -id_name --tags-has '[tropical]'
+ $ list_countries.pl --detail --sort -ind_name --tags-has '[tropical]'
  .---------------------------------------------.
- | en_name   | id | id_name   | tags           |
+ | eng_name  | id | ind_name  | tags           |
  +-----------+----+-----------+----------------+
  | Singapore | sg | Singapura | tropical       |
  | Indonesia | id | Indonesia | bali, tropical |
  '-----------+----+-----------+----------------'
 
  # show only certain fields, limit number of records, return in YAML format
- $ list_countries.pl --fields '[id, en_name]' --result-limit 2 --yaml
- ---
- - id: cn
-   en_name: China
- - id: id
-   en_name: Indonesia
+ $ list_countries.pl --fields '[id, eng_name]' --result-limit 2 --format=yaml
+ - 200
+ - OK
+ -
+   - id: cn
+     eng_name: China
+   - id: id
+     eng_name: Indonesia
 
 =head1 DESCRIPTION
 
@@ -1208,7 +1221,6 @@ metadata. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
-Internally, the
 This module uses L<Log::Any> for logging.
 
 =head1 CAVEATS
@@ -1223,8 +1235,15 @@ L<Rinci>
 
 L<Perinci::CmdLine>
 
+=head1 DESCRIPTION
+
+
+This module has L<Rinci> metadata.
+
 =head1 FUNCTIONS
 
+
+None are exported by default, but they are exportable.
 
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
 
@@ -1242,7 +1261,7 @@ arguments.
 
 =item *
 
-B<with_field_names> => BOOL (default 1)
+I<with_field_names> => BOOL (default 1)
 
   If set to 1, function will return records of field values along with field
   names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
@@ -1253,49 +1272,49 @@ B<with_field_names> => BOOL (default 1)
 
 =item *
 
-B<detail> => BOOL (default 0)
+I<detail> => BOOL (default 0)
 
   This is a field selection option. If set to 0, function will return PK field
   only. If this argument is set to 1, then all fields will be returned (see also
-  B<fields> to instruct function to return some fields only).
+  I<fields> to instruct function to return some fields only).
 
 
 
 =item *
 
-B<fields> => ARRAY
+I<fields> => ARRAY
 
   This is a field selection option. If you only want certain fields, specify
-  them here (see also B<detail>).
+  them here (see also I<detail>).
 
 
 
 =item *
 
-B<result_limit> => INT (default undef)
+I<result_limit> => INT (default undef)
 
 
 
 =item *
 
-B<result_start> => INT (default 1)
+I<result_start> => INT (default 1)
 
-  The B<result_limit> and B<result_start> arguments are paging options, they work
+  The I<result_limit> and I<result_start> arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
-  example, to return the first 20 records in the result, set B<result_limit> to
+  example, to return the first 20 records in the result, set I<result_limit> to
 
 
 
 =item *
 
-To return the next 20 records, set B<result_limit> to 20 and B<result_start>
+To return the next 20 records, set I<result_limit> to 20 and I<result_start>
   to 21.
 
 
 
 =item *
 
-B<random> => BOOL (default 0)
+I<random> => BOOL (default 0)
 
   The random argument is an ordering option. If set to true, order of records
   returned will be shuffled first. This happened before paging.
@@ -1304,7 +1323,7 @@ B<random> => BOOL (default 0)
 
 =item *
 
-B<sort> => STR
+I<sort> => STR
 
   The sort argument is an ordering option, containing name of field. A - prefix
   signifies descending instead of ascending order. Multiple fields are allowed,
@@ -1314,12 +1333,12 @@ B<sort> => STR
 
 =item *
 
-B<q> => STR
+I<q> => STR
 
   A filtering option. By default, all fields except those specified with
   searchable=0 will be searched using simple case-insensitive string search.
   There are a few options to customize this, using these gen arguments:
-  B<word_search>, B<case_insensitive_search>, and B<custom_search>.
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
 
 
 
@@ -1336,23 +1355,23 @@ Filter arguments
 
 =item *
 
-B<FIELD.is> and B<FIELD.isnt> arguments for each field. Only records with
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
  field equalling (or not equalling) value exactly ('==' or 'eq') will be
- included. If doesn't clash with other function arguments, B<FIELD> will also
- be added as an alias for B<FIELD.is>.
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
 
 
 
 =item *
 
-B<FIELD.has> and B<FIELD.lacks> array arguments for each set field. Only
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
 records with field having or lacking certain value will be included.
 
 
 
 =item *
 
-B<FIELD.min> and B<FIELD.max> for each int/float/str field. Only records with
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
 field greater/equal than, or less/equal than a certain value will be
 included.
 
@@ -1360,7 +1379,7 @@ included.
 
 =item *
 
-B<FIELD.contains> and B<FIELD.not_contains> for each str field. Only records
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
 with field containing (or not containing) certain value (substring) will be
 included.
 
@@ -1368,7 +1387,7 @@ included.
 
 =item *
 
-B<FIELD.matches> and B<FIELD.not_matches> for each str field. Only records
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
 with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
@@ -1392,8 +1411,8 @@ Supply custom filters.
 
 A hash of filter name and definitions. Filter name will be used as generated
 function's argument and must not clash with other arguments. Filter definition
-is a hash containing these keys: B<meta> (hash, argument metadata), B<code>,
-B<fields> (array, list of table fields related to this field).
+is a hash containing these keys: I<meta> (hash, argument metadata), I<code>,
+I<fields> (array, list of table fields related to this field).
 
 Code will be called for each record to be filtered and will be supplied ($r, $v,
 $opts) where $v is the filter value (from the function argument) and $r the
@@ -1449,12 +1468,20 @@ Generated function's description.
 
 Decide whether generated function will support searching (argument q).
 
+=item * B<install> => I<bool> (default: 1)
+
+Whether to install generated function (and metadata).
+
+By default, generated function will be installed to the specified (or caller's)
+package, as well as its generated metadata into %SPEC. Set this argument to
+false to skip installing.
+
 =item * B<langs> => I<array> (default: ["en_US"])
 
 Choose language for function metadata.
 
 This function can generate metadata containing text from one or more languages.
-For example if you set 'langs' to ['enB<US', 'id>ID'] then the generated function
+For example if you set 'langs' to ['enI<US', 'id>ID'] then the generated function
 metadata might look something like this:
 
     {
@@ -1470,6 +1497,19 @@ metadata might look something like this:
         ...
     }
 
+=item * B<name>* => I<str>
+
+Generated function's name, e.g. `myfunc`.
+
+=item * B<package>* => I<str>
+
+Generated function's package, e.g. `My::Package`.
+
+This is needed mostly for installing the function. You usually don't need to
+supply this if you set C<install> to false.
+
+If not specified, caller's package will be used by default.
+
 =item * B<summary>* => I<str>
 
 Generated function's summary.
@@ -1484,20 +1524,20 @@ below).
 Passing a subroutine lets you fetch data dynamically and from arbitrary source
 (e.g. DBI table or other external sources). The subroutine will be called with
 these arguments ('$query') and is expected to return a hashref like this {data
-=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL,
-randomized=>BOOL}. DATA is AoA or AoH. If paged is set to 1, data is assumed to
-be already paged and won't be paged again; likewise for filtered, sorted, and
-fields selected. These are useful for example with DBI result, where requested
-data is already filtered/sorted/field selected/paged/randomized via appropriate
-SQL query. This way, the generated function will not attempt to duplicate the
+=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL}. DATA
+is AoA or AoH. If paged is set to 1, data is assumed to be already paged and
+won't be paged again; likewise for filtered, sorted, and fields selected. These
+are useful for example with DBI result, where requested data is already
+filtered/sorted (including randomized)/field selected/paged via appropriate SQL
+query. This way, the generated function will not attempt to duplicate the
 efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
 (the original arguments passed to the generated function, e.g. {random=>1,
-resultB<limit=>1, field1>match=>'f.+'}), 'mentionedB<fields' which lists fields
+resultI<limit=>1, field1>match=>'f.+'}), 'mentionedI<fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
 'requested>fields' (fields mentioned in list of fields to be returned),
-'sortB<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
+'sortI<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
 mentioned in filter arguments).
 
 =item * B<table_spec>* => I<hash>
@@ -1520,7 +1560,7 @@ true).
 Decide whether generated function will perform word searching instead of string searching.
 
 For example, if search term is 'pine' and field value is 'green pineapple',
-search will match if wordB<search=false, but won't match under word>search.
+search will match if wordI<search=false, but won't match under word>search.
 
 This will not have effect under 'custom_search'.
 
