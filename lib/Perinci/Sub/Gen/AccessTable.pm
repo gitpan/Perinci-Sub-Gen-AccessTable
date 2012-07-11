@@ -18,7 +18,7 @@ our @EXPORT_OK = qw(gen_read_table_func);
 
 with 'SHARYANTO::Role::I18NMany';
 
-our $VERSION = '0.13'; # VERSION
+our $VERSION = '0.14'; # VERSION
 
 our %SPEC;
 
@@ -1025,7 +1025,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller;
+    my @caller = caller(1);
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
@@ -1097,6 +1097,7 @@ sub _gen_read_table_func {
 
     if ($args{install} // 1) {
         no strict 'refs';
+        #$log->tracef("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
         ${$package . "::SPEC"}{$uqname} = $func_meta;
     }
@@ -1117,7 +1118,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.13
+version 0.14
 
 =head1 SYNOPSIS
 
