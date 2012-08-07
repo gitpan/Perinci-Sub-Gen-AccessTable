@@ -9,16 +9,17 @@ use Moo; # we go OO just for the I18N, we don't store attributes, etc
 use Data::Clone;
 use Data::Sah;
 use List::Util qw(shuffle);
+use Perinci::Object::Metadata;
 use Perinci::Sub::Gen::common;
+use Perinci::Sub::Wrapper qw(wrapped);
+use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
-
-use Exporter;
-our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(gen_read_table_func);
 
 with 'SHARYANTO::Role::I18NMany';
 
-our $VERSION = '0.14'; # VERSION
+use Perinci::Exporter;
+
+our $VERSION = '0.15'; # VERSION
 
 our %SPEC;
 
@@ -90,6 +91,42 @@ sub _add_arg {
     $func_meta->{args}{$arg_name} = $arg_spec;
 }
 
+sub _add_table_desc_to_func_description {
+    my ($self, $func_meta, $table_spec, $opts) = @_;
+    my $langs = $opts->{langs};
+
+    for my $lang (@$langs) {
+        my $td = $self->locl(
+            $lang, "Data is in table form. Table fields are as follow:");
+        $td .= "\n\n";
+        my $ff = $table_spec->{fields};
+        for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
+                        keys %$ff) {
+            my $f  = $ff->{$fn};
+            my $fo = Perinci::Object::Metadata->new($f);
+            my $sum = $fo->langprop("summary", {lang=>$lang});
+            $td .=
+                join("",
+                     "  - *$fn*",
+                     $table_spec->{pk} eq $fn ?
+                         " (".$self->locl($lang, "ID field").")":"",
+                     $sum ? ": $sum" : "",
+                     "\n\n");
+            my $desc = $fo->langprop("description", {lang=>$lang});
+            if ($desc) {
+                $desc =~ s/^/    /mg;
+                $td .= "$desc\n\n";
+            }
+        }
+
+        my $key = "description" . ($lang eq 'en_US' ? '' : ".alt.lang.$lang");
+        $func_meta->{$key} //= "";
+        $func_meta->{$key} .= "\n" unless $func_meta->{$key} =~ /\n\z/;
+        $func_meta->{$key} .= "\n" unless $func_meta->{$key} !~ /\S/;
+        $func_meta->{$key} .= $td;
+    }
+}
+
 sub _gen_meta {
     my ($self, $table_spec, $opts) = @_;
     my $langs = $opts->{langs};
@@ -99,9 +136,12 @@ sub _gen_meta {
     my $func_meta = {
         v => 1.1,
         summary => $opts->{summary} // $table_spec->{summary} // "REPLACE ME",
-        description => "REPLACE ME",
+        description => $opts->{description} // "REPLACE ME",
         args => {},
     };
+
+    $self->_add_table_desc_to_func_description($func_meta, $table_spec, $opts);
+
     my $func_args = $func_meta->{args};
 
     $self->_add_arg(
@@ -571,7 +611,7 @@ sub _gen_func {
         my $metadata = {};
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
-        } elsif (ref($table_data) eq 'CODE') {
+        } elsif (reftype($table_data) eq 'CODE') {
             my $res;
             return [500, "BUG: Data function died: $@"]
                 unless eval { $res = $table_data->($query) };
@@ -1015,6 +1055,8 @@ sub gen_read_table_func {
     my %args = @_;
 
     my $self = __PACKAGE__->new;
+    $self->{_wrapped} = wrapped();
+    #$log->errorf("TMP: wrapped=%s", $self->{_wrapped});
     $self->_gen_read_table_func(%args);
 }
 
@@ -1025,7 +1067,7 @@ sub _gen_read_table_func {
     my ($uqname, $package);
     my $fqname = $args{name};
     return [400, "Please specify name"] unless $fqname;
-    my @caller = caller(1);
+    my @caller = caller($self->{_wrapped} ? 3 : 1); # +2 if we're wrapped
     if ($fqname =~ /(.+)::(.+)/) {
         $package = $1;
         $uqname  = $2;
@@ -1036,8 +1078,9 @@ sub _gen_read_table_func {
     }
     my $table_data = $args{table_data}
         or return [400, "Please specify table_data"];
-    __is_aoa($table_data) or __is_aoh($table_data) or ref($table_data) eq 'CODE'
-        or return [400, "Invalid table_data: must be AoA or AoH or function"];
+    __is_aoa($table_data) or __is_aoh($table_data) or
+        reftype($table_data) eq 'CODE'
+            or return [400, "Invalid table_data: must be AoA/AoH/function"];
     my $table_spec = $args{table_spec}
         or return [400, "Please specify table_spec"];
     ref($table_spec) eq 'HASH'
@@ -1097,7 +1140,8 @@ sub _gen_read_table_func {
 
     if ($args{install} // 1) {
         no strict 'refs';
-        #$log->tracef("Installing function as %s ...", $fqname);
+        no warnings;
+        $log->tracef("Installing function as %s ...", $fqname);
         *{ $fqname } = $func;
         ${$package . "::SPEC"}{$uqname} = $func_meta;
     }
@@ -1118,7 +1162,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.14
+version 0.15
 
 =head1 SYNOPSIS
 
@@ -1236,15 +1280,8 @@ L<Rinci>
 
 L<Perinci::CmdLine>
 
-=head1 DESCRIPTION
-
-
-This module has L<Rinci> metadata.
-
 =head1 FUNCTIONS
 
-
-None are exported by default, but they are exportable.
 
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
 
@@ -1262,7 +1299,7 @@ arguments.
 
 =item *
 
-I<with_field_names> => BOOL (default 1)
+B<with_field_names> => BOOL (default 1)
 
   If set to 1, function will return records of field values along with field
   names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
@@ -1273,49 +1310,49 @@ I<with_field_names> => BOOL (default 1)
 
 =item *
 
-I<detail> => BOOL (default 0)
+B<detail> => BOOL (default 0)
 
   This is a field selection option. If set to 0, function will return PK field
   only. If this argument is set to 1, then all fields will be returned (see also
-  I<fields> to instruct function to return some fields only).
+  B<fields> to instruct function to return some fields only).
 
 
 
 =item *
 
-I<fields> => ARRAY
+B<fields> => ARRAY
 
   This is a field selection option. If you only want certain fields, specify
-  them here (see also I<detail>).
+  them here (see also B<detail>).
 
 
 
 =item *
 
-I<result_limit> => INT (default undef)
+B<result_limit> => INT (default undef)
 
 
 
 =item *
 
-I<result_start> => INT (default 1)
+B<result_start> => INT (default 1)
 
-  The I<result_limit> and I<result_start> arguments are paging options, they work
+  The B<result_limit> and B<result_start> arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
-  example, to return the first 20 records in the result, set I<result_limit> to
+  example, to return the first 20 records in the result, set B<result_limit> to
 
 
 
 =item *
 
-To return the next 20 records, set I<result_limit> to 20 and I<result_start>
+To return the next 20 records, set B<result_limit> to 20 and B<result_start>
   to 21.
 
 
 
 =item *
 
-I<random> => BOOL (default 0)
+B<random> => BOOL (default 0)
 
   The random argument is an ordering option. If set to true, order of records
   returned will be shuffled first. This happened before paging.
@@ -1324,7 +1361,7 @@ I<random> => BOOL (default 0)
 
 =item *
 
-I<sort> => STR
+B<sort> => STR
 
   The sort argument is an ordering option, containing name of field. A - prefix
   signifies descending instead of ascending order. Multiple fields are allowed,
@@ -1334,12 +1371,12 @@ I<sort> => STR
 
 =item *
 
-I<q> => STR
+B<q> => STR
 
   A filtering option. By default, all fields except those specified with
   searchable=0 will be searched using simple case-insensitive string search.
   There are a few options to customize this, using these gen arguments:
-  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+  B<word_search>, B<case_insensitive_search>, and B<custom_search>.
 
 
 
@@ -1356,23 +1393,23 @@ Filter arguments
 
 =item *
 
-I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+B<FIELD.is> and B<FIELD.isnt> arguments for each field. Only records with
  field equalling (or not equalling) value exactly ('==' or 'eq') will be
- included. If doesn't clash with other function arguments, I<FIELD> will also
- be added as an alias for I<FIELD.is>.
+ included. If doesn't clash with other function arguments, B<FIELD> will also
+ be added as an alias for B<FIELD.is>.
 
 
 
 =item *
 
-I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+B<FIELD.has> and B<FIELD.lacks> array arguments for each set field. Only
 records with field having or lacking certain value will be included.
 
 
 
 =item *
 
-I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+B<FIELD.min> and B<FIELD.max> for each int/float/str field. Only records with
 field greater/equal than, or less/equal than a certain value will be
 included.
 
@@ -1380,7 +1417,7 @@ included.
 
 =item *
 
-I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+B<FIELD.contains> and B<FIELD.not_contains> for each str field. Only records
 with field containing (or not containing) certain value (substring) will be
 included.
 
@@ -1388,7 +1425,7 @@ included.
 
 =item *
 
-I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+B<FIELD.matches> and B<FIELD.not_matches> for each str field. Only records
 with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
@@ -1412,8 +1449,8 @@ Supply custom filters.
 
 A hash of filter name and definitions. Filter name will be used as generated
 function's argument and must not clash with other arguments. Filter definition
-is a hash containing these keys: I<meta> (hash, argument metadata), I<code>,
-I<fields> (array, list of table fields related to this field).
+is a hash containing these keys: B<meta> (hash, argument metadata), B<code>,
+B<fields> (array, list of table fields related to this field).
 
 Code will be called for each record to be filtered and will be supplied ($r, $v,
 $opts) where $v is the filter value (from the function argument) and $r the
@@ -1482,7 +1519,7 @@ false to skip installing.
 Choose language for function metadata.
 
 This function can generate metadata containing text from one or more languages.
-For example if you set 'langs' to ['enI<US', 'id>ID'] then the generated function
+For example if you set 'langs' to ['enB<US', 'id>ID'] then the generated function
 metadata might look something like this:
 
     {
@@ -1535,10 +1572,10 @@ efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
 (the original arguments passed to the generated function, e.g. {random=>1,
-resultI<limit=>1, field1>match=>'f.+'}), 'mentionedI<fields' which lists fields
+resultB<limit=>1, field1>match=>'f.+'}), 'mentionedB<fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
 'requested>fields' (fields mentioned in list of fields to be returned),
-'sortI<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
+'sortB<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
 mentioned in filter arguments).
 
 =item * B<table_spec>* => I<hash>
@@ -1561,7 +1598,7 @@ true).
 Decide whether generated function will perform word searching instead of string searching.
 
 For example, if search term is 'pine' and field value is 'green pineapple',
-search will match if wordI<search=false, but won't match under word>search.
+search will match if wordB<search=false, but won't match under word>search.
 
 This will not have effect under 'custom_search'.
 

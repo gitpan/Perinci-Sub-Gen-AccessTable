@@ -18,7 +18,7 @@ my %module_build_args = (
     "Steven Haryanto <stevenharyanto\@gmail.com>"
   ],
   "dist_name" => "Perinci-Sub-Gen-AccessTable",
-  "dist_version" => "0.14",
+  "dist_version" => "0.15",
   "license" => "perl",
   "module_name" => "Perinci::Sub::Gen::AccessTable",
   "recommends" => {},
@@ -30,8 +30,11 @@ my %module_build_args = (
     "Lingua::ID::Nums2Words" => 0,
     "Log::Any" => 0,
     "Moo" => 0,
+    "Perinci::Exporter" => 0,
+    "Perinci::Object::Metadata" => 0,
     "Perinci::Sub::GetArgs::Argv" => "0.13",
-    "Rinci" => "1.1.13",
+    "Perinci::Sub::Wrapper" => "0.28",
+    "Rinci" => "v1.1.13",
     "SHARYANTO::Role::I18NMany" => "0.17",
     "perl" => "5.010001"
   },

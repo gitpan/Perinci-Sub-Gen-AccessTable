@@ -1,5 +1,7 @@
 package Perinci::Sub::Gen::common;
 
+our $VERSION = '0.15'; # VERSION
+
 our %common_args = (
     name => {
         summary => "Generated function's name, e.g. `myfunc`",
@@ -51,17 +53,9 @@ Perinci::Sub::Gen::common - Common stuffs for Perinci::Sub::Gen::* modules
 
 =head1 VERSION
 
-version 0.14
-
-=head1 DESCRIPTION
-
-
-This module has L<Rinci> metadata.
+version 0.15
 
 =head1 FUNCTIONS
-
-
-None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 

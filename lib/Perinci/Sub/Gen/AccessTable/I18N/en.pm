@@ -4,7 +4,7 @@ use base 'Perinci::Sub::Gen::AccessTable::I18N';
 use Locale::Maketext::Lexicon::Gettext;
 our %Lexicon = %{ Locale::Maketext::Lexicon::Gettext->parse(<DATA>) };
 
-our $VERSION = '0.14'; # VERSION
+our $VERSION = '0.15'; # VERSION
 
 #use Data::Dump; dd \%Lexicon;
 
@@ -20,17 +20,9 @@ Perinci::Sub::Gen::AccessTable::I18N::en - English translation for Perinci::Sub:
 
 =head1 VERSION
 
-version 0.14
-
-=head1 DESCRIPTION
-
-
-This module has L<Rinci> metadata.
+version 0.15
 
 =head1 FUNCTIONS
-
-
-None are exported by default, but they are exportable.
 
 =head1 AUTHOR
 
@@ -64,6 +56,17 @@ msgstr "paging"
 
 msgid  "filtering for %1"
 msgstr "filtering for %1"
+
+# table structure description
+
+msgid  "Data is in table form. Table fields are as follow:"
+msgstr "Data is in table form. Table fields are as follow:"
+
+msgid  "field"
+msgstr "field"
+
+msgid  "ID field"
+msgstr "ID field"
 
 # arg: with_field_names
 
