@@ -13,8 +13,8 @@ lib/Perinci/Sub/Gen/AccessTable.pm
 lib/Perinci/Sub/Gen/AccessTable/I18N.pm
 lib/Perinci/Sub/Gen/AccessTable/I18N/en.pm
 lib/Perinci/Sub/Gen/AccessTable/I18N/id.pm
-lib/Perinci/Sub/Gen/common.pm
 t/00-compile.t
+t/00-sanity.t
 t/func.t
 t/meta.t
 t/release-pod-coverage.t
