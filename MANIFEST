@@ -19,5 +19,6 @@ t/func.t
 t/meta.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
+t/release-rinci.t
 t/testlib.pl
 weaver.ini

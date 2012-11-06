@@ -6,24 +6,25 @@ use strict;
 use warnings;
 use Moo; # we go OO just for the I18N, we don't store attributes, etc
 
-use Data::Clone;
-use Data::Sah;
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
-use Perinci::Sub::Wrapper qw(caller);
+use Perinci::Sub::Util qw(wrapres); # caller
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
 with 'SHARYANTO::Role::I18NMany';
 
-use Perinci::Exporter;
+require Exporter;
+our @ISA       = qw(Exporter);
+our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.16'; # VERSION
+our $VERSION = '0.17'; # VERSION
 
 our %SPEC;
 
 sub __parse_schema {
+    require Data::Sah;
     Data::Sah::normalize_schema($_[0]);
 }
 
@@ -1059,6 +1060,8 @@ sub gen_read_table_func {
 }
 
 sub _gen_read_table_func {
+    require Data::Clone;
+
     my ($self, %args) = @_;
 
     # XXX schema
@@ -1093,7 +1096,7 @@ sub _gen_read_table_func {
         return [400, "Invalid table_spec: pk not in fields"];
 
     # duplicate and make each field's schema normalized
-    $table_spec = clone($table_spec);
+    $table_spec = Data::Clone::clone($table_spec);
     for my $fspec (values %{$table_spec->{fields}}) {
         $fspec->{schema} //= 'any';
         $fspec->{schema} = __parse_schema($fspec->{schema});
@@ -1127,12 +1130,12 @@ sub _gen_read_table_func {
 
     my $res;
     $res = $self->_gen_meta($table_spec, $opts);
-    return [$res->[0], "Can't generate meta: $res->[1]"]
+    return wrapres([undef, "Can't generate meta: "], $res)
         unless $res->[0] == 200;
     my $func_meta = $res->[2];
 
     $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
-    return [$res->[0], "Can't generate func: $res->[1]"]
+    return wrapres([undef, "Can't generate func: "], $res)
         unless $res->[0] == 200;
     my $func = $res->[2];
 
@@ -1160,7 +1163,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.16
+version 0.17
 
 =head1 SYNOPSIS
 
@@ -1278,15 +1281,8 @@ L<Rinci>
 
 L<Perinci::CmdLine>
 
-=head1 DESCRIPTION
-
-
-This module has L<Rinci> metadata.
-
 =head1 FUNCTIONS
 
-
-None are exported by default, but they are exportable.
 
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
 
@@ -1304,7 +1300,7 @@ arguments.
 
 =item *
 
-I<with_field_names> => BOOL (default 1)
+B<with_field_names> => BOOL (default 1)
 
   If set to 1, function will return records of field values along with field
   names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
@@ -1315,49 +1311,49 @@ I<with_field_names> => BOOL (default 1)
 
 =item *
 
-I<detail> => BOOL (default 0)
+B<detail> => BOOL (default 0)
 
   This is a field selection option. If set to 0, function will return PK field
   only. If this argument is set to 1, then all fields will be returned (see also
-  I<fields> to instruct function to return some fields only).
+  B<fields> to instruct function to return some fields only).
 
 
 
 =item *
 
-I<fields> => ARRAY
+B<fields> => ARRAY
 
   This is a field selection option. If you only want certain fields, specify
-  them here (see also I<detail>).
+  them here (see also B<detail>).
 
 
 
 =item *
 
-I<result_limit> => INT (default undef)
+B<result_limit> => INT (default undef)
 
 
 
 =item *
 
-I<result_start> => INT (default 1)
+B<result_start> => INT (default 1)
 
-  The I<result_limit> and I<result_start> arguments are paging options, they work
+  The B<result_limit> and B<result_start> arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
-  example, to return the first 20 records in the result, set I<result_limit> to
+  example, to return the first 20 records in the result, set B<result_limit> to
 
 
 
 =item *
 
-To return the next 20 records, set I<result_limit> to 20 and I<result_start>
+To return the next 20 records, set B<result_limit> to 20 and B<result_start>
   to 21.
 
 
 
 =item *
 
-I<random> => BOOL (default 0)
+B<random> => BOOL (default 0)
 
   The random argument is an ordering option. If set to true, order of records
   returned will be shuffled first. This happened before paging.
@@ -1366,7 +1362,7 @@ I<random> => BOOL (default 0)
 
 =item *
 
-I<sort> => STR
+B<sort> => STR
 
   The sort argument is an ordering option, containing name of field. A - prefix
   signifies descending instead of ascending order. Multiple fields are allowed,
@@ -1376,12 +1372,12 @@ I<sort> => STR
 
 =item *
 
-I<q> => STR
+B<q> => STR
 
   A filtering option. By default, all fields except those specified with
   searchable=0 will be searched using simple case-insensitive string search.
   There are a few options to customize this, using these gen arguments:
-  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+  B<word_search>, B<case_insensitive_search>, and B<custom_search>.
 
 
 
@@ -1398,23 +1394,23 @@ Filter arguments
 
 =item *
 
-I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+B<FIELD.is> and B<FIELD.isnt> arguments for each field. Only records with
  field equalling (or not equalling) value exactly ('==' or 'eq') will be
- included. If doesn't clash with other function arguments, I<FIELD> will also
- be added as an alias for I<FIELD.is>.
+ included. If doesn't clash with other function arguments, B<FIELD> will also
+ be added as an alias for B<FIELD.is>.
 
 
 
 =item *
 
-I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+B<FIELD.has> and B<FIELD.lacks> array arguments for each set field. Only
 records with field having or lacking certain value will be included.
 
 
 
 =item *
 
-I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+B<FIELD.min> and B<FIELD.max> for each int/float/str field. Only records with
 field greater/equal than, or less/equal than a certain value will be
 included.
 
@@ -1422,7 +1418,7 @@ included.
 
 =item *
 
-I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+B<FIELD.contains> and B<FIELD.not_contains> for each str field. Only records
 with field containing (or not containing) certain value (substring) will be
 included.
 
@@ -1430,7 +1426,7 @@ included.
 
 =item *
 
-I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+B<FIELD.matches> and B<FIELD.not_matches> for each str field. Only records
 with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
@@ -1454,8 +1450,8 @@ Supply custom filters.
 
 A hash of filter name and definitions. Filter name will be used as generated
 function's argument and must not clash with other arguments. Filter definition
-is a hash containing these keys: I<meta> (hash, argument metadata), I<code>,
-I<fields> (array, list of table fields related to this field).
+is a hash containing these keys: B<meta> (hash, argument metadata), B<code>,
+B<fields> (array, list of table fields related to this field).
 
 Code will be called for each record to be filtered and will be supplied ($r, $v,
 $opts) where $v is the filter value (from the function argument) and $r the
@@ -1503,7 +1499,7 @@ Supply default 'sort' value in generated function's metadata.
 
 Supply default 'with_field_names' value in generated function's metadata.
 
-=item * B<description> => I<str>
+=item * B<description>* => I<str>
 
 Generated function's description.
 
@@ -1524,7 +1520,7 @@ false to skip installing.
 Choose language for function metadata.
 
 This function can generate metadata containing text from one or more languages.
-For example if you set 'langs' to ['enI<US', 'id>ID'] then the generated function
+For example if you set 'langs' to ['enB<US', 'id>ID'] then the generated function
 metadata might look something like this:
 
     {
@@ -1544,7 +1540,7 @@ metadata might look something like this:
 
 Generated function's name, e.g. `myfunc`.
 
-=item * B<package> => I<str>
+=item * B<package>* => I<str>
 
 Generated function's package, e.g. `My::Package`.
 
@@ -1553,7 +1549,7 @@ supply this if you set C<install> to false.
 
 If not specified, caller's package will be used by default.
 
-=item * B<summary> => I<str>
+=item * B<summary>* => I<str>
 
 Generated function's summary.
 
@@ -1577,10 +1573,10 @@ efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
 (the original arguments passed to the generated function, e.g. {random=>1,
-resultI<limit=>1, field1>match=>'f.+'}), 'mentionedI<fields' which lists fields
+resultB<limit=>1, field1>match=>'f.+'}), 'mentionedB<fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
 'requested>fields' (fields mentioned in list of fields to be returned),
-'sortI<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
+'sortB<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
 mentioned in filter arguments).
 
 =item * B<table_spec>* => I<hash>
@@ -1603,7 +1599,7 @@ true).
 Decide whether generated function will perform word searching instead of string searching.
 
 For example, if search term is 'pine' and field value is 'green pineapple',
-search will match if wordI<search=false, but won't match under word>search.
+search will match if wordB<search=false, but won't match under word>search.
 
 This will not have effect under 'custom_search'.
 
