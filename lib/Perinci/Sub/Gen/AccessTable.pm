@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.18'; # VERSION
+our $VERSION = '0.19'; # VERSION
 
 our %SPEC;
 
@@ -265,7 +265,8 @@ _
                 "equals specified value",
         );
         unless ($func_args->{$fname}) {
-            $func_args->{$fname} = $func_args->{"$fname.is"};
+            $func_args->{$fname} =
+                Data::Clone::clone($func_args->{"$fname.is"});
         }
         if ($ftype eq 'array') {
             $self->_add_arg(
@@ -624,21 +625,21 @@ sub _gen_func {
             $data = $table_data;
         } elsif (reftype($table_data) eq 'CODE') {
             my $res;
-            return [500, "BUG: Data function died: $@"]
+            return [500, "BUG: Table data function died: $@"]
                 unless eval { $res = $table_data->($query) };
-            return [500, "BUG: Result returned from function is not a hash".
-                        ", please report to administrator"]
+            return [500, "BUG: Result returned from table data function ".
+                        "is not a hash, please report to administrator"]
                 unless ref($res) eq 'HASH';
             $data = $res->{data};
-            return [500, "BUG: 'data' key from result is not AoA/AoH".
-                        ", please report to administrator"]
+            return [500, "BUG: 'data' key from table data function ".
+                        "is not an AoA/AoH, please report to administrator"]
                 unless __is_aoa($data) || __is_aoh($data);
             for (qw/filtered sorted paged fields_selected/) {
                 $metadata->{$_} = $res->{$_};
             }
         } else {
             # this should be impossible, already checked earlier
-            die "BUG: Data is not an array";
+            die "BUG: 'data' from table data function is not an array";
         }
         for ('after_fetch_data') {
             $hooks->{$_}->(%args, _stage=>$_, _query=>$query, _data=>$data)
@@ -1193,7 +1194,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.18
+version 0.19
 
 =head1 SYNOPSIS
 
