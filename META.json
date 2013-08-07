@@ -4,7 +4,7 @@
       "Steven Haryanto <stevenharyanto@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300028, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "Dist::Zilla version 4.300035, CPAN::Meta::Converter version 2.131560",
    "license" : [
       "perl_5"
    ],
@@ -48,6 +48,7 @@
             "Rinci" : "v1.1.13",
             "SHARYANTO::Role::I18NMany" : "0.17",
             "SHARYANTO::String::Util" : "0",
+            "experimental" : "0",
             "perl" : "5.010001"
          }
       },
@@ -64,6 +65,6 @@
          "url" : "http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable"
       }
    },
-   "version" : "0.19"
+   "version" : "0.20"
 }
 

@@ -8,7 +8,7 @@ build_requires:
 configure_requires:
   Module::Build: 0.3601
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.300028, CPAN::Meta::Converter version 2.120921'
+generated_by: 'Dist::Zilla version 4.300035, CPAN::Meta::Converter version 2.131560'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -29,8 +29,9 @@ requires:
   Rinci: v1.1.13
   SHARYANTO::Role::I18NMany: 0.17
   SHARYANTO::String::Util: 0
+  experimental: 0
   perl: 5.010001
 resources:
   homepage: http://search.cpan.org/dist/Perinci-Sub-Gen-AccessTable/
   repository: http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable
-version: 0.19
+version: 0.20

@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.19
+    version 0.20
 
 SYNOPSIS
     In list_countries.pl:
@@ -99,9 +99,9 @@ SYNOPSIS
 DESCRIPTION
     This module is useful when you want to expose a table data (an array of
     hashrefs, an array of arrays, or external data like a SQL table) as an
-    API function. This module will generate a function that accepts
-    arguments for specifying fields, filtering, sorting, and paging; along
-    with its Rinci metadata. The resulting function can then be run via
+    API function. This module will generate a function (along with its Rinci
+    metadata) that accepts arguments for specifying fields, filtering,
+    sorting, and paging. The resulting function can then be run via
     command-line using Perinci::CmdLine (as demonstrated in Synopsis), or
     served via HTTP using Perinci::Access::HTTP::Server, or consumed
     normally by Perl programs.
@@ -131,8 +131,6 @@ FUNCTIONS
     None are exported by default, but they are exportable.
 
   gen_read_table_func(%args) -> [status, msg, result, meta]
-    Generate function (and its metadata) to read table data.
-
     The generated function acts like a simple single table SQL SELECT query,
     featuring filtering, ordering, and paging, but using arguments as the
     'query language'. The generated function is suitable for exposing a
@@ -166,9 +164,8 @@ FUNCTIONS
           The I<result_limit> and I<result_start> arguments are paging options, they work
           like LIMIT clause in SQL, except that index starts at 1 and not 0. For
           example, to return the first 20 records in the result, set I<result_limit> to
-
-    *   To return the next 20 records, set *result_limit* to 20 and
-        *result_start* to 21.
+          20 . To return the next 20 records, set I<result_limit> to 20 and
+          I<result_start> to 21.
 
     *   *random* => BOOL (default 0)
 

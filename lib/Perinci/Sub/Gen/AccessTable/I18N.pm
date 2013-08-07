@@ -3,12 +3,13 @@ package Perinci::Sub::Gen::AccessTable::I18N;
 use parent 'Locale::Maketext';
 use Locale::Maketext::Lexicon;
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 1;
 # ABSTRACT: Project class for Perinci::Sub::Gen:AccessTable
 
 __END__
+
 =pod
 
 =encoding utf-8
@@ -19,7 +20,7 @@ Perinci::Sub::Gen::AccessTable::I18N - Project class for Perinci::Sub::Gen:Acces
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 AUTHOR
 
@@ -40,4 +41,3 @@ the same terms as the Perl 5 programming language system itself.
 None are exported by default, but they are exportable.
 
 =cut
-

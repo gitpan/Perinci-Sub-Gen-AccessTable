@@ -5,6 +5,7 @@ use Log::Any '$log';
 use strict;
 use warnings;
 use Moo; # we go OO just for the I18N, we don't store attributes, etc
+use experimental 'smartmatch';
 
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
@@ -19,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 our %SPEC;
 
@@ -268,6 +269,31 @@ _
             $func_args->{$fname} =
                 Data::Clone::clone($func_args->{"$fname.is"});
         }
+        # .in & .not_in should be applicable to arrays to, but it is currently
+        # implemented with perl's ~~ which can't handle this transparently. as
+        # for bool, it's not that important.
+        unless ($ftype ~~ [qw/array bool/]) {
+            $self->_add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$fname.in",
+                type        => ['array*' => {of => "$ftype*"}],
+                cat_name    => "filtering-for-$fname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is in the specified values",
+            );
+            $self->_add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "$fname.not_in",
+                type        => ['array*' => {of => "$ftype*"}],
+                cat_name    => "filtering-for-$fname",
+                cat_text    => "filtering for [_1]",
+                summary     => "Only return records where the '[_1]' field ".
+                    "is not in the specified values",
+            );
+        }
         if ($ftype eq 'array') {
             $self->_add_arg(
                 func_meta   => $func_meta,
@@ -449,6 +475,18 @@ sub __parse_query {
             push @filters, [$f, "!~~", $args->{"$f.lacks"}];
         }
         push @filter_fields, $f if $exists && !($f ~~ @filter_fields);
+    }
+
+    for my $f (grep {!($fspecs->{$_}{schema}[0] ~~ ['array','bool'])} @fields) {
+        my $exists;
+        if (defined $args->{"$f.in"}) {
+            $exists++;
+            push @filters, [$f, "in", $args->{"$f.in"}];
+        }
+        if (defined $args->{"$f.not_in"}) {
+            $exists++;
+            push @filters, [$f, "not_in", $args->{"$f.not_in"}];
+        }
     }
 
     for my $f (grep {$fspecs->{$_}{schema}[0] =~ /^(int|float|str)$/}
@@ -685,6 +723,10 @@ sub _gen_func {
                     for (@$opn) {
                         next REC if $_ ~~ @{$r_h->{$f}};
                     }
+                } elsif ($op eq 'in') {
+                    next REC unless $r_h->{$f} ~~ @$opn;
+                } elsif ($op eq 'not_in') {
+                    next REC if $r_h->{$f} ~~ @$opn;
                 } elsif ($op eq 'eq') { next REC unless $r_h->{$f} eq $opn
                 } elsif ($op eq '==') { next REC unless $r_h->{$f} == $opn
                 } elsif ($op eq 'ne') { next REC unless $r_h->{$f} ne $opn
@@ -841,8 +883,8 @@ arguments.
   The *result_limit* and *result_start* arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
   example, to return the first 20 records in the result, set *result_limit* to
-  20. To return the next 20 records, set *result_limit* to 20 and *result_start*
-  to 21.
+  20 . To return the next 20 records, set *result_limit* to 20 and
+  *result_start* to 21.
 
 * *random* => BOOL (default 0)
 
@@ -869,23 +911,23 @@ arguments.
 
   Undef values will not match any filter, just like NULL in SQL.
 
-  + *FIELD.is* and *FIELD.isnt* arguments for each field. Only records with
+  * *FIELD.is* and *FIELD.isnt* arguments for each field. Only records with
      field equalling (or not equalling) value exactly ('==' or 'eq') will be
      included. If doesn't clash with other function arguments, *FIELD* will also
      be added as an alias for *FIELD.is*.
 
-  + *FIELD.has* and *FIELD.lacks* array arguments for each set field. Only
+  * *FIELD.has* and *FIELD.lacks* array arguments for each set field. Only
     records with field having or lacking certain value will be included.
 
-  + *FIELD.min* and *FIELD.max* for each int/float/str field. Only records with
+  * *FIELD.min* and *FIELD.max* for each int/float/str field. Only records with
     field greater/equal than, or less/equal than a certain value will be
     included.
 
-  + *FIELD.contains* and *FIELD.not_contains* for each str field. Only records
+  * *FIELD.contains* and *FIELD.not_contains* for each str field. Only records
     with field containing (or not containing) certain value (substring) will be
     included.
 
-  + *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
+  * *FIELD.matches* and *FIELD.not_matches* for each str field. Only records
     with field matching (or not matching) certain value (regex) (or will be
     included. Function will return 400 if regex is invalid. These arguments will
     not be generated if 'filterable_regex' clause in field specification is set
@@ -1182,8 +1224,8 @@ sub _gen_read_table_func {
 1;
 # ABSTRACT: Generate function (and its Rinci metadata) to access table data
 
-
 __END__
+
 =pod
 
 =encoding utf-8
@@ -1194,7 +1236,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 SYNOPSIS
 
@@ -1292,9 +1334,9 @@ Now you can do:
 
 This module is useful when you want to expose a table data (an array of
 hashrefs, an array of arrays, or external data like a SQL table) as an API
-function. This module will generate a function that accepts arguments for
-specifying fields, filtering, sorting, and paging; along with its L<Rinci>
-metadata. The resulting function can then be run via command-line using
+function. This module will generate a function (along with its L<Rinci>
+metadata) that accepts arguments for specifying fields, filtering, sorting, and
+paging. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
@@ -1329,8 +1371,6 @@ the same terms as the Perl 5 programming language system itself.
 None are exported by default, but they are exportable.
 
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
-
-Generate function (and its metadata) to read table data.
 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
@@ -1385,13 +1425,8 @@ I<result_start> => INT (default 1)
   The I<result_limit> and I<result_start> arguments are paging options, they work
   like LIMIT clause in SQL, except that index starts at 1 and not 0. For
   example, to return the first 20 records in the result, set I<result_limit> to
-
-
-
-=item *
-
-To return the next 20 records, set I<result_limit> to 20 and I<result_start>
-  to 21.
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
 
 
 
@@ -1664,4 +1699,3 @@ Return value:
 Returns an enveloped result (an array). First element (status) is an integer containing HTTP status code (200 means OK, 4xx caller error, 5xx function error). Second element (msg) is a string containing error message, or 'OK' if status is 200. Third element (result) is optional, the actual result. Fourth element (meta) is called result metadata and is optional, a hash that contains extra information.
 
 =cut
-

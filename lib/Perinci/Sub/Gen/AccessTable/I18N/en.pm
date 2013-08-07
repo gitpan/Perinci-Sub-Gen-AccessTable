@@ -4,13 +4,12 @@ use base 'Perinci::Sub::Gen::AccessTable::I18N';
 use Locale::Maketext::Lexicon::Gettext;
 our %Lexicon = %{ Locale::Maketext::Lexicon::Gettext->parse(<DATA>) };
 
-our $VERSION = '0.19'; # VERSION
+our $VERSION = '0.20'; # VERSION
 
 #use Data::Dump; dd \%Lexicon;
 
 1;
 # ABSTRACT: English translation for Perinci::Sub::Gen::AccessTable
-
 
 =pod
 
@@ -22,7 +21,7 @@ Perinci::Sub::Gen::AccessTable::I18N::en - English translation for Perinci::Sub:
 
 =head1 VERSION
 
-version 0.19
+version 0.20
 
 =head1 AUTHOR
 
@@ -43,7 +42,6 @@ the same terms as the Perl 5 programming language system itself.
 None are exported by default, but they are exportable.
 
 =cut
-
 
 __DATA__
 
@@ -140,6 +138,16 @@ msgstr "Search"
 
 msgid  "Only return records where the '%1' field equals specified value"
 msgstr "Only return records where the '%1' field equals specified value"
+
+# arg: FIELD.in
+
+msgid  "Only return records where the '%1' field is in the specified values"
+msgstr "Only return records where the '%1' field is in the specified values"
+
+# arg: FIELD.not_in
+
+msgid  "Only return records where the '%1' field is not in the specified values"
+msgstr "Only return records where the '%1' field is not in the specified values"
 
 # arg: FIELD.has
 
