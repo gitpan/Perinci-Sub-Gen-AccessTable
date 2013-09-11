@@ -14,14 +14,9 @@
    },
    "name" : "Perinci-Sub-Gen-AccessTable",
    "prereqs" : {
-      "build" : {
-         "requires" : {
-            "Module::Build" : "0.3601"
-         }
-      },
       "configure" : {
          "requires" : {
-            "Module::Build" : "0.3601"
+            "ExtUtils::MakeMaker" : "6.30"
          }
       },
       "develop" : {
@@ -65,6 +60,6 @@
          "url" : "http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable"
       }
    },
-   "version" : "0.20"
+   "version" : "0.21"
 }
 

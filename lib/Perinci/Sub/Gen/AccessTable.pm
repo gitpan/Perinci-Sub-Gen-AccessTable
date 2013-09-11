@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.20'; # VERSION
+our $VERSION = '0.21'; # VERSION
 
 our %SPEC;
 
@@ -804,6 +804,7 @@ sub _gen_func {
         }
 
         use warnings;
+        use experimental 'smartmatch';
 
         # perform paging
         $log->tracef("(read_table_func) Paging ...");
@@ -1236,7 +1237,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.20
+version 0.21
 
 =head1 SYNOPSIS
 
