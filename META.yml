@@ -3,11 +3,13 @@ abstract: 'Generate function (and its Rinci metadata) to access table data'
 author:
   - 'Steven Haryanto <stevenharyanto@gmail.com>'
 build_requires:
+  Capture::Tiny: 0
   Test::More: 0.96
+  blib: 0
 configure_requires:
   ExtUtils::MakeMaker: 6.30
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 4.300035, CPAN::Meta::Converter version 2.131560'
+generated_by: 'Dist::Zilla version 4.300035, CPAN::Meta::Converter version 2.132140'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -33,4 +35,4 @@ requires:
 resources:
   homepage: http://search.cpan.org/dist/Perinci-Sub-Gen-AccessTable/
   repository: http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable
-version: 0.21
+version: 0.22
