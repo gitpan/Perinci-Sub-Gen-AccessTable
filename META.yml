@@ -35,4 +35,4 @@ requires:
 resources:
   homepage: http://search.cpan.org/dist/Perinci-Sub-Gen-AccessTable/
   repository: http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable
-version: 0.22
+version: 0.23

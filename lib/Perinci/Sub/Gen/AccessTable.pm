@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.22'; # VERSION
+our $VERSION = '0.23'; # VERSION
 
 our %SPEC;
 
@@ -653,9 +653,9 @@ sub _gen_func {
         {
             my $res = __parse_query($table_spec, $opts, $func_meta, \%args);
             for ('after_parse_query') {
+                $hookargs{_parse_res} = $res;
                 last unless $hooks->{$_};
                 $hookargs{_stage} = $_;
-                $hookargs{_parse_res} = $res;
                 $hooks->{$_}->(%hookargs);
             }
             return $res unless $res->[0] == 200;
@@ -666,9 +666,9 @@ sub _gen_func {
         my $data;
         my $metadata = {};
         for ('before_fetch_data') {
+            $hookargs{_query} = $query;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_query} = $query;
             $hooks->{$_}->(%hookargs);
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
@@ -692,9 +692,9 @@ sub _gen_func {
             die "BUG: 'data' from table data function is not an array";
         }
         for ('after_fetch_data') {
+            $hookargs{_data} = $data;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_data} = $query;
             $hooks->{$_}->(%hookargs);
         }
 
@@ -853,12 +853,18 @@ sub _gen_func {
         }
       SKIP_SELECT_FIELDS:
 
-        # return data
         my $res = [200, "OK", \@r];
+
+        my %rfopts = (table_column_orders => [$query->{requested_fields}]);
+        $res->[3]{result_format_options} = {
+            text          => \%rfopts,
+            "text-pretty" => \%rfopts,
+        };
+
         for ('before_return') {
+            $hookargs{_func_res} = $res;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hookargs{_func_res} = $res;
             $hooks->{$_}->(%hookargs);
         }
 
@@ -1263,7 +1269,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.22
+version 0.23
 
 =head1 SYNOPSIS
 
