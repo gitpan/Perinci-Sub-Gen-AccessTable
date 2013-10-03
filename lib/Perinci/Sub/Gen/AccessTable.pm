@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.23'; # VERSION
+our $VERSION = '0.24'; # VERSION
 
 our %SPEC;
 
@@ -47,7 +47,7 @@ sub __is_filter_arg {
     return 0 unless $tags;
     for my $tag (@$tags) {
         next unless ref($tag) eq 'HASH';
-        return 1 if $tag->{name} =~ /^cat:filtering/;
+        return 1 if $tag->{name} =~ /^category:filtering/;
     }
     0;
 }
@@ -63,7 +63,7 @@ sub _add_arg {
 
     die "BUG: Duplicate arg $arg_name" if $func_meta->{args}{$arg_name};
 
-    my $tag = {name=>"cat:$args{cat_name}"};
+    my $tag = {name=>"category:$args{cat_name}"};
     my $schema = ref($args{type}) eq 'ARRAY' ? $args{type} :
         [$args{type} => {}];
     $schema->[1] //= {};
@@ -323,7 +323,7 @@ _
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.min",
-                type        => [array => {of=>'str*'}],
+                type        => $ftype,
                 default     => $opts->{"default_$fname.min"},
                 cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
@@ -345,7 +345,7 @@ _
                 func_meta   => $func_meta,
                 langs       => $langs,
                 name        => "$fname.xmin",
-                type        => [array => {of=>'str*'}],
+                type        => $ftype,
                 default     => $opts->{"default_$fname.xmin"},
                 cat_name    => "filtering-for-$fname",
                 cat_text    => "filtering for [_1]",
@@ -1269,7 +1269,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.23
+version 0.24
 
 =head1 SYNOPSIS
 
