@@ -10,7 +10,7 @@ use experimental 'smartmatch';
 use List::Util qw(shuffle);
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
-use Perinci::Sub::Util qw(wrapres); # caller
+use Perinci::Sub::Util qw(err);
 use Scalar::Util qw(reftype);
 use SHARYANTO::String::Util qw(trim_blank_lines);
 
@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.24'; # VERSION
+our $VERSION = '0.25'; # VERSION
 
 our %SPEC;
 
@@ -444,7 +444,7 @@ sub __parse_query {
         $args->{with_field_names} //= 0;
     }
     for (@requested_fields) {
-        return [400, "Unknown field $_"] unless $_ ~~ @fields;
+        return err(400, "Unknown field $_") unless $_ ~~ @fields;
     }
     $query->{requested_fields} = \@requested_fields;
 
@@ -594,11 +594,11 @@ sub __parse_query {
         my @f = split /\s*[,;]\s*/, $args->{sort};
         for my $f (@f) {
             my $desc = $f =~ s/^-//;
-            return [400, "Unknown field in sort: $f"]
+            return err(400, "Unknown field in sort: $f")
                 unless $f ~~ @fields;
             my $fspec = $fspecs->{$f};
             my $ftype = $fspec->{schema}[0];
-            return [400, "Field $f is not sortable"]
+            return err(400, "Field $f is not sortable")
                 unless !defined($fspec->{sortable}) || $fspec->{sortable};
             my $op = $ftype =~ /^(int|float)$/ ? '<=>' : 'cmp';
             #print "ftype=$ftype, op=$op\n";
@@ -647,7 +647,8 @@ sub _gen_func {
         for ('before_parse_query') {
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
         my $query;
         {
@@ -656,7 +657,8 @@ sub _gen_func {
                 $hookargs{_parse_res} = $res;
                 last unless $hooks->{$_};
                 $hookargs{_stage} = $_;
-                $hooks->{$_}->(%hookargs);
+                my $hres = $hooks->{$_}->(%hookargs);
+                return $hres if ref($hres);
             }
             return $res unless $res->[0] == 200;
             $query = $res->[2];
@@ -669,20 +671,20 @@ sub _gen_func {
             $hookargs{_query} = $query;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
         if (__is_aoa($table_data) || __is_aoh($table_data)) {
             $data = $table_data;
         } elsif (reftype($table_data) eq 'CODE') {
             my $res;
-            return [500, "BUG: Table data function died: $@"]
+            return err(500, "BUG: Table data function died: $@")
                 unless eval { $res = $table_data->($query) };
-            return [500, "BUG: Result returned from table data function ".
-                        "is not a hash, please report to administrator"]
-                unless ref($res) eq 'HASH';
+            return err(500, "BUG: Result returned from table data function ".
+                           "is not a hash") unless ref($res) eq 'HASH';
             $data = $res->{data};
-            return [500, "BUG: 'data' key from table data function ".
-                        "is not an AoA/AoH, please report to administrator"]
+            return err(500, "BUG: 'data' key from table data function ".
+                           "is not an AoA/AoH")
                 unless __is_aoa($data) || __is_aoh($data);
             for (qw/filtered sorted paged fields_selected/) {
                 $metadata->{$_} = $res->{$_};
@@ -695,7 +697,8 @@ sub _gen_func {
             $hookargs{_data} = $data;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
 
         # this will be the final result.
@@ -720,7 +723,7 @@ sub _gen_func {
             } elsif (ref($r0) eq 'HASH') {
                 $r_h = { %$r0 };
             } else {
-                return [500, "BUG: Invalid record, not a hash/array"];
+                return err(500, "BUG: Invalid record, not a hash/array");
             }
 
             goto SKIP_FILTER if $metadata->{filtered};
@@ -865,7 +868,8 @@ sub _gen_func {
             $hookargs{_func_res} = $res;
             last unless $hooks->{$_};
             $hookargs{_stage} = $_;
-            $hooks->{$_}->(%hookargs);
+            my $hres = $hooks->{$_}->(%hookargs);
+            return $hres if ref($hres);
         }
 
         $res;
@@ -1151,6 +1155,10 @@ will also get `_query`. `after_fetch_data` and later will also get `_data`.
 `before_return` will also get `_func_res` (the enveloped response to be returned
 to user).
 
+Hook should return nothing or a false value on success. It can abort execution
+of the generated function if it returns an envelope response (an array). On that
+case, the function will return with this return value.
+
 _
         },
     },
@@ -1234,13 +1242,11 @@ sub _gen_read_table_func {
 
     my $res;
     $res = $self->_gen_meta($table_spec, $opts);
-    return wrapres([undef, "Can't generate meta: "], $res)
-        unless $res->[0] == 200;
+    return err(500, "Can't generate meta", $res) unless $res->[0] == 200;
     my $func_meta = $res->[2];
 
     $res = $self->_gen_func($table_spec, $opts, $table_data, $func_meta);
-    return wrapres([undef, "Can't generate func: "], $res)
-        unless $res->[0] == 200;
+    return err(500, "Can't generate func", $res) unless $res->[0] == 200;
     my $func = $res->[2];
 
     if ($args{install} // 1) {
@@ -1269,7 +1275,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.24
+version 0.25
 
 =head1 SYNOPSIS
 
@@ -1380,6 +1386,17 @@ This module uses L<Log::Any> for logging.
 It is often not a good idea to expose your database schema directly as API.
 
 =head1 FAQ
+
+=head2 I want my function to accept additional arguments.
+
+You can add arguments to the metadata by yourself, e.g.:
+
+ our %SPEC;
+ gen_read_table_func(name => 'myfunc', ...);
+ $SPEC{myfunc}{args}{add1} = {...};
+
+As for the implementation, you can specify hooks to do things with the extra
+arguments.
 
 =head1 SEE ALSO
 
@@ -1632,6 +1649,10 @@ hooks will also get C<_parse_res> (parse result). C<before_fetch_data> and later
 will also get C<_query>. C<after_fetch_data> and later will also get C<_data>.
 C<before_return> will also get C<_func_res> (the enveloped response to be returned
 to user).
+
+Hook should return nothing or a false value on success. It can abort execution
+of the generated function if it returns an envelope response (an array). On that
+case, the function will return with this return value.
 
 =item * B<install> => I<bool> (default: 1)
 

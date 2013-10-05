@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.24
+    version 0.25
 
 SYNOPSIS
     In list_countries.pl:
@@ -113,6 +113,16 @@ CAVEATS
     API.
 
 FAQ
+  I want my function to accept additional arguments.
+    You can add arguments to the metadata by yourself, e.g.:
+
+     our %SPEC;
+     gen_read_table_func(name => 'myfunc', ...);
+     $SPEC{myfunc}{args}{add1} = {...};
+
+    As for the implementation, you can specify hooks to do things with the
+    extra arguments.
+
 SEE ALSO
     Rinci
 
@@ -305,6 +315,11 @@ FUNCTIONS
         and later will also get "_query". "after_fetch_data" and later will
         also get "_data". "before_return" will also get "_func_res" (the
         enveloped response to be returned to user).
+
+        Hook should return nothing or a false value on success. It can abort
+        execution of the generated function if it returns an envelope
+        response (an array). On that case, the function will return with
+        this return value.
 
     *   install => *bool* (default: 1)
 
