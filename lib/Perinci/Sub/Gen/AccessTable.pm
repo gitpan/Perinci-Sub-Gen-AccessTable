@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.25'; # VERSION
+our $VERSION = '0.26'; # VERSION
 
 our %SPEC;
 
@@ -430,7 +430,8 @@ sub __parse_query {
     my $query = {args=>$args};
 
     my $fspecs = $table_spec->{fields};
-    my @fields = keys %$fspecs;
+    my @fields = sort {$fspecs->{$a}{index} <=> $fspecs->{$b}{index}}
+        keys %$fspecs;
 
     my @requested_fields;
     if ($args->{detail}) {
@@ -634,7 +635,8 @@ sub _gen_func {
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
-            if (defined $av->{schema}[1]{default}) {
+            if (ref($av->{schema}) && ref($av->{schema}[1]) &&
+                    defined($av->{schema}[1]{default})) {
                 $args{$ak} //= $av->{schema}[1]{default};
             }
             # array-ize "string,with,comma"
@@ -856,10 +858,19 @@ sub _gen_func {
         }
       SKIP_SELECT_FIELDS:
 
-        my $res = [200, "OK", \@r];
+        my $resmeta = {};
+        my $res = [200, "OK", \@r, $resmeta];
 
-        my %rfopts = (table_column_orders => [$query->{requested_fields}]);
-        $res->[3]{result_format_options} = {
+        my %rfopts = (
+            table_column_orders  => [$query->{requested_fields}],
+            # bool needs display hints
+            table_column_formats => [{
+                map { $_ => [[bool => {type=>'check'}]] }
+                    grep { $fspecs->{$_}{schema}[0] eq 'bool' }
+                        @{$query->{requested_fields}}
+                    }],
+        );
+        $resmeta->{result_format_options} = {
             text          => \%rfopts,
             "text-pretty" => \%rfopts,
         };
@@ -873,7 +884,7 @@ sub _gen_func {
         }
 
         $res;
-    };
+    }; # func;
 
     [200, "OK", $func];
 }
@@ -1275,7 +1286,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.25
+version 0.26
 
 =head1 SYNOPSIS
 
