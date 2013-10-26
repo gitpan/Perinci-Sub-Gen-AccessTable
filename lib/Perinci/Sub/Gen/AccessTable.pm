@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.26'; # VERSION
+our $VERSION = '0.27'; # VERSION
 
 our %SPEC;
 
@@ -269,6 +269,18 @@ _
             $func_args->{$fname} =
                 Data::Clone::clone($func_args->{"$fname.is"});
         }
+        $self->_add_arg(
+            func_meta   => $func_meta,
+            langs       => $langs,
+            name        => "$fname.isnt",
+            type        => "$ftype*",
+            default     => $opts->{"default_$fname.isnt"},
+            cat_name    => "filtering-for-$fname",
+            cat_text    => "filtering for [_1]",
+            summary     => "Only return records where the '[_1]' field ".
+                "does not equal specified value",
+        );
+
         # .in & .not_in should be applicable to arrays to, but it is currently
         # implemented with perl's ~~ which can't handle this transparently. as
         # for bool, it's not that important.
@@ -458,6 +470,9 @@ sub __parse_query {
         if (defined $args->{"$f.is"}) {
             $exists++;
             push @filters, [$f, "truth", $args->{"$f.is"}];
+        } elsif (defined $args->{"$f.isnt"}) {
+            $exists++;
+            push @filters, [$f, "truth", !$args->{"$f.isnt"}];
         } elsif (defined($args->{$f}) && __is_filter_arg($f, $func_meta)) {
             $exists++;
             push @filters, [$f, "truth", $args->{$f}];
@@ -632,6 +647,7 @@ sub _gen_func {
         my %args = @_;
         my $hooks = $opts->{hooks};
         my %hookargs = %args;
+        $hookargs{_func_args} = \%args;
 
         # XXX schema
         while (my ($ak, $av) = each %$func_args) {
@@ -1160,11 +1176,12 @@ You can instruct the generated function to execute codes in various stages by
 using hooks. Currently available hooks are: `before_parse_query`,
 `after_parse_query`, `before_fetch_data`, `after_fetch_data`, `before_return`.
 Hooks will be passed the function arguments as well as one or more additional
-ones. All hooks will get `_stage` (name of stage). `after_parse_query` and later
-hooks will also get `_parse_res` (parse result). `before_fetch_data` and later
-will also get `_query`. `after_fetch_data` and later will also get `_data`.
-`before_return` will also get `_func_res` (the enveloped response to be returned
-to user).
+ones. All hooks will get `_stage` (name of stage) and `_func_res` (function
+arguments, but as hash reference so you can modify it). `after_parse_query` and
+later hooks will also get `_parse_res` (parse result). `before_fetch_data` and
+later will also get `_query`. `after_fetch_data` and later will also get
+`_data`. `before_return` will also get `_func_res` (the enveloped response to be
+returned to user).
 
 Hook should return nothing or a false value on success. It can abort execution
 of the generated function if it returns an envelope response (an array). On that
@@ -1284,10 +1301,6 @@ __END__
 
 Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to access table data
 
-=head1 VERSION
-
-version 0.26
-
 =head1 SYNOPSIS
 
 In list_countries.pl:
@@ -1392,46 +1405,12 @@ L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
 
 This module uses L<Log::Any> for logging.
 
-=head1 CAVEATS
-
-It is often not a good idea to expose your database schema directly as API.
-
-=head1 FAQ
-
-=head2 I want my function to accept additional arguments.
-
-You can add arguments to the metadata by yourself, e.g.:
-
- our %SPEC;
- gen_read_table_func(name => 'myfunc', ...);
- $SPEC{myfunc}{args}{add1} = {...};
-
-As for the implementation, you can specify hooks to do things with the extra
-arguments.
-
-=head1 SEE ALSO
-
-L<Rinci>
-
-L<Perinci::CmdLine>
-
-=head1 AUTHOR
-
-Steven Haryanto <stevenharyanto@gmail.com>
-
-=head1 COPYRIGHT AND LICENSE
-
-This software is copyright (c) 2013 by Steven Haryanto.
-
-This is free software; you can redistribute it and/or modify it under
-the same terms as the Perl 5 programming language system itself.
-
 =head1 FUNCTIONS
 
 
-None are exported by default, but they are exportable.
-
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
+
+Generate function (and its metadata) to read table data.
 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
@@ -1655,11 +1634,12 @@ You can instruct the generated function to execute codes in various stages by
 using hooks. Currently available hooks are: C<before_parse_query>,
 C<after_parse_query>, C<before_fetch_data>, C<after_fetch_data>, C<before_return>.
 Hooks will be passed the function arguments as well as one or more additional
-ones. All hooks will get C<_stage> (name of stage). C<after_parse_query> and later
-hooks will also get C<_parse_res> (parse result). C<before_fetch_data> and later
-will also get C<_query>. C<after_fetch_data> and later will also get C<_data>.
-C<before_return> will also get C<_func_res> (the enveloped response to be returned
-to user).
+ones. All hooks will get C<_stage> (name of stage) and C<_func_res> (function
+arguments, but as hash reference so you can modify it). C<after_parse_query> and
+later hooks will also get C<_parse_res> (parse result). C<before_fetch_data> and
+later will also get C<_query>. C<after_fetch_data> and later will also get
+C<_data>. C<before_return> will also get C<_func_res> (the enveloped response to be
+returned to user).
 
 Hook should return nothing or a false value on success. It can abort execution
 of the generated function if it returns an envelope response (an array). On that
@@ -1766,5 +1746,57 @@ This will not have effect under 'custom_search'.
 Return value:
 
 Returns an enveloped result (an array). First element (status) is an integer containing HTTP status code (200 means OK, 4xx caller error, 5xx function error). Second element (msg) is a string containing error message, or 'OK' if status is 200. Third element (result) is optional, the actual result. Fourth element (meta) is called result metadata and is optional, a hash that contains extra information.
+
+=head1 CAVEATS
+
+It is often not a good idea to expose your database schema directly as API.
+
+=head1 FAQ
+
+=head2 I want my function to accept additional arguments.
+
+You can add arguments to the metadata by yourself, e.g.:
+
+ our %SPEC;
+ gen_read_table_func(name => 'myfunc', ...);
+ $SPEC{myfunc}{args}{add1} = {...};
+
+As for the implementation, you can specify hooks to do things with the extra
+arguments.
+
+=head1 SEE ALSO
+
+L<Rinci>
+
+L<Perinci::CmdLine>
+
+=head1 HOMEPAGE
+
+Please visit the project's homepage at L<https://metacpan.org/release/Perinci-Sub-Gen-AccessTable>.
+
+=head1 SOURCE
+
+Source repository is at L<https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable>.
+
+=head1 BUGS
+
+Please report any bugs or feature requests on the bugtracker website
+http://rt.cpan.org/Public/Dist/Display.html?Name=Perinci-Sub-Gen-AccessTabl
+e
+
+When submitting a bug or request, please include a test-file or a
+patch to an existing test-file that illustrates the bug or desired
+feature.
+
+=head1 AUTHOR
+
+Steven Haryanto <stevenharyanto@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2013 by Steven Haryanto.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut

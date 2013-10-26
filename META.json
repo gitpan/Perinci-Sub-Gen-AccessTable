@@ -4,7 +4,7 @@
       "Steven Haryanto <stevenharyanto@gmail.com>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 4.300035, CPAN::Meta::Converter version 2.132140",
+   "generated_by" : "Dist::Zilla version 4.300039, CPAN::Meta::Converter version 2.132140",
    "license" : [
       "perl_5"
    ],
@@ -57,12 +57,7 @@
       }
    },
    "release_status" : "stable",
-   "resources" : {
-      "homepage" : "http://search.cpan.org/dist/Perinci-Sub-Gen-AccessTable/",
-      "repository" : {
-         "url" : "http://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable"
-      }
-   },
-   "version" : "0.26"
+   "resources" : {},
+   "version" : "0.27"
 }
 

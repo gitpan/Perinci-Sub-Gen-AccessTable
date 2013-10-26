@@ -2,9 +2,6 @@ NAME
     Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci
     metadata) to access table data
 
-VERSION
-    version 0.26
-
 SYNOPSIS
     In list_countries.pl:
 
@@ -108,39 +105,10 @@ DESCRIPTION
 
     This module uses Log::Any for logging.
 
-CAVEATS
-    It is often not a good idea to expose your database schema directly as
-    API.
-
-FAQ
-  I want my function to accept additional arguments.
-    You can add arguments to the metadata by yourself, e.g.:
-
-     our %SPEC;
-     gen_read_table_func(name => 'myfunc', ...);
-     $SPEC{myfunc}{args}{add1} = {...};
-
-    As for the implementation, you can specify hooks to do things with the
-    extra arguments.
-
-SEE ALSO
-    Rinci
-
-    Perinci::CmdLine
-
-AUTHOR
-    Steven Haryanto <stevenharyanto@gmail.com>
-
-COPYRIGHT AND LICENSE
-    This software is copyright (c) 2013 by Steven Haryanto.
-
-    This is free software; you can redistribute it and/or modify it under
-    the same terms as the Perl 5 programming language system itself.
-
 FUNCTIONS
-    None are exported by default, but they are exportable.
-
   gen_read_table_func(%args) -> [status, msg, result, meta]
+    Generate function (and its metadata) to read table data.
+
     The generated function acts like a simple single table SQL SELECT query,
     featuring filtering, ordering, and paging, but using arguments as the
     'query language'. The generated function is suitable for exposing a
@@ -310,11 +278,13 @@ FUNCTIONS
         "before_parse_query", "after_parse_query", "before_fetch_data",
         "after_fetch_data", "before_return". Hooks will be passed the
         function arguments as well as one or more additional ones. All hooks
-        will get "_stage" (name of stage). "after_parse_query" and later
-        hooks will also get "_parse_res" (parse result). "before_fetch_data"
-        and later will also get "_query". "after_fetch_data" and later will
-        also get "_data". "before_return" will also get "_func_res" (the
-        enveloped response to be returned to user).
+        will get "_stage" (name of stage) and "_func_res" (function
+        arguments, but as hash reference so you can modify it).
+        "after_parse_query" and later hooks will also get "_parse_res"
+        (parse result). "before_fetch_data" and later will also get
+        "_query". "after_fetch_data" and later will also get "_data".
+        "before_return" will also get "_func_res" (the enveloped response to
+        be returned to user).
 
         Hook should return nothing or a false value on success. It can abort
         execution of the generated function if it returns an envelope
@@ -431,4 +401,49 @@ FUNCTIONS
     message, or 'OK' if status is 200. Third element (result) is optional,
     the actual result. Fourth element (meta) is called result metadata and
     is optional, a hash that contains extra information.
+
+CAVEATS
+    It is often not a good idea to expose your database schema directly as
+    API.
+
+FAQ
+  I want my function to accept additional arguments.
+    You can add arguments to the metadata by yourself, e.g.:
+
+     our %SPEC;
+     gen_read_table_func(name => 'myfunc', ...);
+     $SPEC{myfunc}{args}{add1} = {...};
+
+    As for the implementation, you can specify hooks to do things with the
+    extra arguments.
+
+SEE ALSO
+    Rinci
+
+    Perinci::CmdLine
+
+HOMEPAGE
+    Please visit the project's homepage at
+    <https://metacpan.org/release/Perinci-Sub-Gen-AccessTable>.
+
+SOURCE
+    Source repository is at
+    <https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable>.
+
+BUGS
+    Please report any bugs or feature requests on the bugtracker website
+    http://rt.cpan.org/Public/Dist/Display.html?Name=Perinci-Sub-Gen-AccessT
+    abl e
+
+    When submitting a bug or request, please include a test-file or a patch
+    to an existing test-file that illustrates the bug or desired feature.
+
+AUTHOR
+    Steven Haryanto <stevenharyanto@gmail.com>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2013 by Steven Haryanto.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 
