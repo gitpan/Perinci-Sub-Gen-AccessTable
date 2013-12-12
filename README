@@ -2,6 +2,9 @@ NAME
     Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci
     metadata) to access table data
 
+VERSION
+    version 0.28
+
 SYNOPSIS
     In list_countries.pl:
 
@@ -106,9 +109,9 @@ DESCRIPTION
     This module uses Log::Any for logging.
 
 FUNCTIONS
-  gen_read_table_func(%args) -> [status, msg, result, meta]
-    Generate function (and its metadata) to read table data.
+    None are exported by default, but they are exportable.
 
+  gen_read_table_func(%args) -> [status, msg, result, meta]
     The generated function acts like a simple single table SQL SELECT query,
     featuring filtering, ordering, and paging, but using arguments as the
     'query language'. The generated function is suitable for exposing a
@@ -432,8 +435,8 @@ SOURCE
 
 BUGS
     Please report any bugs or feature requests on the bugtracker website
-    http://rt.cpan.org/Public/Dist/Display.html?Name=Perinci-Sub-Gen-AccessT
-    abl e
+    <https://rt.cpan.org/Public/Dist/Display.html?Name=Perinci-Sub-Gen-Acces
+    sTable>
 
     When submitting a bug or request, please include a test-file or a patch
     to an existing test-file that illustrates the bug or desired feature.

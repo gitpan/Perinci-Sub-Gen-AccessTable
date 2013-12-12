@@ -1,5 +1,6 @@
 Changes
 LICENSE
+LocaleData/id/LC_MESSAGES/Perinci-Sub-Gen-AccessTable.mo
 MANIFEST
 MANIFEST.SKIP
 META.json
@@ -10,9 +11,7 @@ dist.ini
 examples/list-countries
 examples/num-and-words
 lib/Perinci/Sub/Gen/AccessTable.pm
-lib/Perinci/Sub/Gen/AccessTable/I18N.pm
-lib/Perinci/Sub/Gen/AccessTable/I18N/en.pm
-lib/Perinci/Sub/Gen/AccessTable/I18N/id.pm
+share/LocaleData/id/LC_MESSAGES/Perinci-Sub-Gen-AccessTable.mo
 t/00-compile.t
 t/00-sanity.t
 t/func.t
