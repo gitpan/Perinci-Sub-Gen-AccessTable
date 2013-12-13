@@ -7,7 +7,7 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 
 use List::Util qw(shuffle);
-use Locale::TextDomain 'Perinci-Sub-Gen-AccessTable';
+use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.28'; # VERSION
+our $VERSION = '0.29'; # VERSION
 
 our %SPEC;
 
@@ -80,7 +80,7 @@ sub _add_arg {
         next unless defined $args{$prop};
         #$args{$prop} = trim_blank_lines($args{$prop});
         for my $lang (@$langs) {
-            setlocale(LC_ALL, $lang);
+            setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
             my $isdeflang = $lang eq 'en_US';
             my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
             $arg_spec->{$k} = __x($args{$prop}, %xargs);
@@ -89,7 +89,7 @@ sub _add_arg {
 
     for my $lang (@$langs) {
         for my $prop (qw/summary/) {
-            setlocale(LC_ALL, $lang);
+            setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
             my $isdeflang = $lang eq 'en_US';
             my $k = $prop . ($isdeflang ? '' : ".alt.lang.$lang");
             $tag->{$k} = __x($args{cat_text}, %xargs);
@@ -107,8 +107,8 @@ sub _add_table_desc_to_func_description {
     my $orig_locale = setlocale(LC_ALL);
 
     for my $lang (@$langs) {
-        setlocale(LC_ALL, $lang);
-        my $td = __ "Data is in table form. Table fields are as follow:";
+        setlocale(LC_ALL, $lang) or warn "Can't setlocale $lang";
+        my $td = __("Data is in table form. Table fields are as follow:");
         $td .= "\n\n";
         my $ff = $table_spec->{fields};
         for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
@@ -1308,7 +1308,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.28
+version 0.29
 
 =head1 SYNOPSIS
 
@@ -1417,10 +1417,11 @@ This module uses L<Log::Any> for logging.
 =head1 FUNCTIONS
 
 
-None are exported by default, but they are exportable.
-
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
 
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -1559,6 +1560,7 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
+}
 
 
 
@@ -1570,185 +1572,3132 @@ Arguments ('*' denotes required arguments):
 
 =item * B<case_insensitive_search> => I<bool> (default: 1)
 
-Decide whether generated function will perform case-insensitive search.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<custom_filters> => I<hash>
 
-Supply custom filters.
+{en_US Generate function (and its metadata) to read table data}.
 
-A hash of filter name and definitions. Filter name will be used as generated
-function's argument and must not clash with other arguments. Filter definition
-is a hash containing these keys: I<meta> (hash, argument metadata), I<code>,
-I<fields> (array, list of table fields related to this field).
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-Code will be called for each record to be filtered and will be supplied ($r, $v,
-$opts) where $v is the filter value (from the function argument) and $r the
-hashref record value. $opts is currently empty. Code should return true if
-record satisfies the filter.
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<custom_search> => I<code>
 
-Supply custom searching for generated function.
+{en_US Generate function (and its metadata) to read table data}.
 
-Code will be supplied ($r, $q, $opts) where $r is the record (hashref), $q is
-the search term (from the function argument 'q'), and $opts is {ci=>0|1}. Code
-should return true if record matches search term.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_arg_values> => I<hash>
 
-Specify defaults for generated function's arguments.
+{en_US Generate function (and its metadata) to read table data}.
 
-Can be used to supply default filters, e.g.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-    # limit years for credit card expiration date
-    { "year.min" => $curyear, "year.max" => $curyear+10, }
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_detail> => I<bool>
 
-Supply default 'detail' value for function arg spec.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_fields> => I<str>
 
-Supply default 'fields' value for function arg spec.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_random> => I<bool>
 
-Supply default 'random' value in generated function's metadata.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_result_limit> => I<int>
 
-Supply default 'result_limit' value in generated function's metadata.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_sort> => I<str>
 
-Supply default 'sort' value in generated function's metadata.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<default_with_field_names> => I<bool>
 
-Supply default 'with_field_names' value in generated function's metadata.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<description> => I<str>
 
-Generated function's description.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<enable_search> => I<bool> (default: 1)
 
-Decide whether generated function will support searching (argument q).
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<hooks> => I<hash>
 
-Supply hooks.
+{en_US Generate function (and its metadata) to read table data}.
 
-You can instruct the generated function to execute codes in various stages by
-using hooks. Currently available hooks are: C<before_parse_query>,
-C<after_parse_query>, C<before_fetch_data>, C<after_fetch_data>, C<before_return>.
-Hooks will be passed the function arguments as well as one or more additional
-ones. All hooks will get C<_stage> (name of stage) and C<_func_res> (function
-arguments, but as hash reference so you can modify it). C<after_parse_query> and
-later hooks will also get C<_parse_res> (parse result). C<before_fetch_data> and
-later will also get C<_query>. C<after_fetch_data> and later will also get
-C<_data>. C<before_return> will also get C<_func_res> (the enveloped response to be
-returned to user).
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-Hook should return nothing or a false value on success. It can abort execution
-of the generated function if it returns an envelope response (an array). On that
-case, the function will return with this return value.
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<install> => I<bool> (default: 1)
 
-Whether to install generated function (and metadata).
+{en_US Generate function (and its metadata) to read table data}.
 
-By default, generated function will be installed to the specified (or caller's)
-package, as well as its generated metadata into %SPEC. Set this argument to
-false to skip installing.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<langs> => I<array> (default: ["en_US"])
 
-Choose language for function metadata.
+{en_US Generate function (and its metadata) to read table data}.
 
-This function can generate metadata containing text from one or more languages.
-For example if you set 'langs' to ['enI<US', 'id>ID'] then the generated function
-metadata might look something like this:
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-    {
-        v => 1.1,
-        args => {
-            random => {
-                summary => 'Random order of results', # English
-                "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
-                ...
-            },
-            ...
-        },
-        ...
-    }
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<name>* => I<str>
 
-Generated function's name, e.g. `myfunc`.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<package> => I<str>
 
-Generated function's package, e.g. `My::Package`.
+{en_US Generate function (and its metadata) to read table data}.
 
-This is needed mostly for installing the function. You usually don't need to
-supply this if you set C<install> to false.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-If not specified, caller's package will be used by default.
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<summary> => I<str>
 
-Generated function's summary.
+{en_US Generate function (and its metadata) to read table data}.
+
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
+
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<table_data>* => I<any>
 
-Data.
+{en_US Generate function (and its metadata) to read table data}.
 
-Table data is either an AoH or AoA. Or you can also pass a Perl subroutine (see
-below).
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-Passing a subroutine lets you fetch data dynamically and from arbitrary source
-(e.g. DBI table or other external sources). The subroutine will be called with
-these arguments ('$query') and is expected to return a hashref like this {data
-=> DATA, paged=>BOOL, filtered=>BOOL, sorted=>BOOL, fields_selected=>BOOL}. DATA
-is AoA or AoH. If paged is set to 1, data is assumed to be already paged and
-won't be paged again; likewise for filtered, sorted, and fields selected. These
-are useful for example with DBI result, where requested data is already
-filtered/sorted (including randomized)/field selected/paged via appropriate SQL
-query. This way, the generated function will not attempt to duplicate the
-efforts.
+The resulting function returns an array of results/records and accepts these
+arguments.
 
-'$query' is a hashref which contains information about the query, e.g. 'args'
-(the original arguments passed to the generated function, e.g. {random=>1,
-resultI<limit=>1, field1>match=>'f.+'}), 'mentionedI<fields' which lists fields
-that are mentioned in either filtering arguments or fields or ordering,
-'requested>fields' (fields mentioned in list of fields to be returned),
-'sortI<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
-mentioned in filter arguments).
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<table_spec>* => I<hash>
 
-Table specification.
+{en_US Generate function (and its metadata) to read table data}.
 
-A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
-field specification with field name as keys, while 'pk' specifies which field is
-to be designated as the primary key. Currently only single-field PK is allowed.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-Field specification. A hashref with these required keys: 'schema' (a Sah
-schema), 'index' (an integer starting from 0 that specifies position of field in
-the record, required with AoA data) and these optional clauses: 'sortable' (a
-boolean stating whether field can be sorted, default is true), 'filterable' (a
-boolean stating whether field can be mentioned in filter options, default is
-true).
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =item * B<word_search> => I<bool> (default: 0)
 
-Decide whether generated function will perform word searching instead of string searching.
+{en_US Generate function (and its metadata) to read table data}.
 
-For example, if search term is 'pine' and field value is 'green pineapple',
-search will match if wordI<search=false, but won't match under word>search.
+{en_US 
+The generated function acts like a simple single table SQL SELECT query,
+featuring filtering, ordering, and paging, but using arguments as the 'query
+language'. The generated function is suitable for exposing a table data from an
+API function.
 
-This will not have effect under 'custom_search'.
+The resulting function returns an array of results/records and accepts these
+arguments.
+
+=over
+
+=item *
+
+I<with_field_names> => BOOL (default 1)
+
+  If set to 1, function will return records of field values along with field
+  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+  set to 0, then function will return record containing field values without
+  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+
+
+
+=item *
+
+I<detail> => BOOL (default 0)
+
+  This is a field selection option. If set to 0, function will return PK field
+  only. If this argument is set to 1, then all fields will be returned (see also
+  I<fields> to instruct function to return some fields only).
+
+
+
+=item *
+
+I<fields> => ARRAY
+
+  This is a field selection option. If you only want certain fields, specify
+  them here (see also I<detail>).
+
+
+
+=item *
+
+I<result_limit> => INT (default undef)
+
+
+
+=item *
+
+I<result_start> => INT (default 1)
+
+  The I<result_limit> and I<result_start> arguments are paging options, they work
+  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+  example, to return the first 20 records in the result, set I<result_limit> to
+  20 . To return the next 20 records, set I<result_limit> to 20 and
+  I<result_start> to 21.
+
+
+
+=item *
+
+I<random> => BOOL (default 0)
+
+  The random argument is an ordering option. If set to true, order of records
+  returned will be shuffled first. This happened before paging.
+
+
+
+=item *
+
+I<sort> => STR
+
+  The sort argument is an ordering option, containing name of field. A - prefix
+  signifies descending instead of ascending order. Multiple fields are allowed,
+  separated by comma.
+
+
+
+=item *
+
+I<q> => STR
+
+  A filtering option. By default, all fields except those specified with
+  searchable=0 will be searched using simple case-insensitive string search.
+  There are a few options to customize this, using these gen arguments:
+  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
+
+
+
+=item *
+
+Filter arguments
+
+  They will be generated for each field, except when field has 'filterable'
+  clause set to false.
+
+  Undef values will not match any filter, just like NULL in SQL.
+
+
+
+=item *
+
+I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+ field equalling (or not equalling) value exactly ('==' or 'eq') will be
+ included. If doesn't clash with other function arguments, I<FIELD> will also
+ be added as an alias for I<FIELD.is>.
+
+
+
+=item *
+
+I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+records with field having or lacking certain value will be included.
+
+
+
+=item *
+
+I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+field greater/equal than, or less/equal than a certain value will be
+included.
+
+
+
+=item *
+
+I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+with field containing (or not containing) certain value (substring) will be
+included.
+
+
+
+=item *
+
+I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+with field matching (or not matching) certain value (regex) (or will be
+included. Function will return 400 if regex is invalid. These arguments will
+not be generated if 'filterable_regex' clause in field specification is set
+to 0.
+}
+
+
+
+=back
 
 =back
 

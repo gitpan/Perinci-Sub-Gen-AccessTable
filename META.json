@@ -34,7 +34,7 @@
             "Data::Sah" : "0",
             "Lingua::EN::Numbers" : "0",
             "Lingua::ID::Nums2Words" : "0",
-            "Locale::TextDomain" : "0",
+            "Locale::TextDomain::UTF8" : "0",
             "Log::Any" : "0",
             "Perinci::CmdLine" : "0",
             "Perinci::Object::Metadata" : "0",
@@ -67,7 +67,7 @@
          "web" : "https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable"
       }
    },
-   "version" : "0.28",
+   "version" : "0.29",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.010001"
@@ -240,7 +240,7 @@
                      {
                         "class" : "Pod::Weaver::Plugin::Perinci",
                         "name" : "@Author::SHARYANTO/Perinci",
-                        "version" : "0.12"
+                        "version" : "0.14"
                      },
                      {
                         "class" : "Pod::Weaver::Section::Leftovers",
