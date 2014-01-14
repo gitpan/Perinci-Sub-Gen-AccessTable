@@ -11,7 +11,7 @@ configure_requires:
   ExtUtils::MakeMaker: 6.30
   File::ShareDir::Install: 0.03
 dynamic_config: 0
-generated_by: 'Dist::Zilla version 5.006, CPAN::Meta::Converter version 2.132510'
+generated_by: 'Dist::Zilla version 5.006, CPAN::Meta::Converter version 2.132830'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -30,16 +30,17 @@ requires:
   Perinci::Sub::GetArgs::Argv: 0.13
   Perinci::Sub::Util: 0.32
   Rinci: v1.1.13
+  SHARYANTO::Locale::Util: 0.67
   experimental: 0
   perl: 5.010001
 resources:
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Perinci-Sub-Gen-AccessTable
   homepage: https://metacpan.org/release/Perinci-Sub-Gen-AccessTable
   repository: git://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable.git
-version: 0.29
+version: 0.30
 x_Dist_Zilla:
   perl:
-    version: 5.010001
+    version: 5.018001
   plugins:
     -
       class: Dist::Zilla::Plugin::GatherDir
@@ -218,11 +219,11 @@ x_Dist_Zilla:
     -
       class: Dist::Zilla::Plugin::ReadmeFromPod
       name: '@Author::SHARYANTO/ReadmeFromPod'
-      version: 0.18
+      version: 0.21
     -
       class: Dist::Zilla::Plugin::Rinci::Validate
       name: '@Author::SHARYANTO/Rinci::Validate'
-      version: 0.09
+      version: 0.11
     -
       class: Dist::Zilla::Plugin::Test::Compile
       config:
@@ -239,10 +240,6 @@ x_Dist_Zilla:
       name: '@Author::SHARYANTO/Test::Rinci'
       version: 0.01
     -
-      class: Dist::Zilla::Plugin::InstallRelease
-      name: '@Author::SHARYANTO/InstallRelease'
-      version: 0.008
-    -
       class: Dist::Zilla::Plugin::Run::BeforeBuild
       name: '@Author::SHARYANTO/Run::BeforeBuild'
       version: 0.020
@@ -253,7 +250,7 @@ x_Dist_Zilla:
     -
       class: Dist::Zilla::Plugin::LocaleTextDomain
       name: LocaleTextDomain
-      version: 0.88
+      version: 0.87
     -
       class: Dist::Zilla::Plugin::Prereqs
       config:

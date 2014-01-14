@@ -11,7 +11,7 @@ use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use POSIX qw(locale_h);
+use SHARYANTO::Locale::Util qw(:locale_h);
 use Scalar::Util qw(reftype);
 #use SHARYANTO::String::Util qw(trim_blank_lines);
 
@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.29'; # VERSION
+our $VERSION = '0.30'; # VERSION
 
 our %SPEC;
 
@@ -1308,7 +1308,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.29
+version 0.30
 
 =head1 SYNOPSIS
 
@@ -1419,9 +1419,8 @@ This module uses L<Log::Any> for logging.
 
 =head2 gen_read_table_func(%args) -> [status, msg, result, meta]
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -1560,7 +1559,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -1572,9 +1570,8 @@ Arguments ('*' denotes required arguments):
 
 =item * B<case_insensitive_search> => I<bool> (default: 1)
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -1713,7 +1710,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -1721,9 +1717,8 @@ to 0.
 
 =item * B<custom_filters> => I<hash>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -1862,7 +1857,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -1870,9 +1864,8 @@ to 0.
 
 =item * B<custom_search> => I<code>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2011,7 +2004,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2019,9 +2011,8 @@ to 0.
 
 =item * B<default_arg_values> => I<hash>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2160,7 +2151,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2168,9 +2158,8 @@ to 0.
 
 =item * B<default_detail> => I<bool>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2309,7 +2298,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2317,9 +2305,8 @@ to 0.
 
 =item * B<default_fields> => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2458,7 +2445,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2466,9 +2452,8 @@ to 0.
 
 =item * B<default_random> => I<bool>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2607,7 +2592,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2615,9 +2599,8 @@ to 0.
 
 =item * B<default_result_limit> => I<int>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2756,7 +2739,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2764,9 +2746,8 @@ to 0.
 
 =item * B<default_sort> => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -2905,7 +2886,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -2913,9 +2893,8 @@ to 0.
 
 =item * B<default_with_field_names> => I<bool>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3054,7 +3033,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3062,9 +3040,8 @@ to 0.
 
 =item * B<description> => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3203,7 +3180,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3211,9 +3187,8 @@ to 0.
 
 =item * B<enable_search> => I<bool> (default: 1)
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3352,7 +3327,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3360,9 +3334,8 @@ to 0.
 
 =item * B<hooks> => I<hash>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3501,7 +3474,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3509,9 +3481,8 @@ to 0.
 
 =item * B<install> => I<bool> (default: 1)
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3650,7 +3621,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3658,9 +3628,8 @@ to 0.
 
 =item * B<langs> => I<array> (default: ["en_US"])
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3799,7 +3768,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3807,9 +3775,8 @@ to 0.
 
 =item * B<name>* => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -3948,7 +3915,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -3956,9 +3922,8 @@ to 0.
 
 =item * B<package> => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -4097,7 +4062,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -4105,9 +4069,8 @@ to 0.
 
 =item * B<summary> => I<str>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -4246,7 +4209,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -4254,9 +4216,8 @@ to 0.
 
 =item * B<table_data>* => I<any>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -4395,7 +4356,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -4403,9 +4363,8 @@ to 0.
 
 =item * B<table_spec>* => I<hash>
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -4544,7 +4503,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -4552,9 +4510,8 @@ to 0.
 
 =item * B<word_search> => I<bool> (default: 0)
 
-{en_US Generate function (and its metadata) to read table data}.
+Generate function (and its metadata) to read table data.
 
-{en_US 
 The generated function acts like a simple single table SQL SELECT query,
 featuring filtering, ordering, and paging, but using arguments as the 'query
 language'. The generated function is suitable for exposing a table data from an
@@ -4693,7 +4650,6 @@ with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
-}
 
 
 
@@ -4750,7 +4706,7 @@ Steven Haryanto <stevenharyanto@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Steven Haryanto.
+This software is copyright (c) 2014 by Steven Haryanto.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

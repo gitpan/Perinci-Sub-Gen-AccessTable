@@ -3,7 +3,7 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.29
+    version 0.30
 
 SYNOPSIS
     In list_countries.pl:
@@ -110,11 +110,11 @@ DESCRIPTION
 
 FUNCTIONS
   gen_read_table_func(%args) -> [status, msg, result, meta]
-    {en_US Generate function (and its metadata) to read table data}.
+    Generate function (and its metadata) to read table data.
 
-    {en_US The generated function acts like a simple single table SQL SELECT
-    query, featuring filtering, ordering, and paging, but using arguments as
-    the 'query language'. The generated function is suitable for exposing a
+    The generated function acts like a simple single table SQL SELECT query,
+    featuring filtering, ordering, and paging, but using arguments as the
+    'query language'. The generated function is suitable for exposing a
     table data from an API function.
 
     The resulting function returns an array of results/records and accepts
@@ -194,16 +194,16 @@ FUNCTIONS
         records with field matching (or not matching) certain value (regex)
         (or will be included. Function will return 400 if regex is invalid.
         These arguments will not be generated if 'filterable_regex' clause
-        in field specification is set to 0. }
+        in field specification is set to 0.
 
     Arguments ('*' denotes required arguments):
 
     *   case_insensitive_search => *bool* (default: 1)
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -285,14 +285,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   custom_filters => *hash*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -374,14 +374,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   custom_search => *code*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -463,14 +463,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_arg_values => *hash*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -552,14 +552,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_detail => *bool*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -641,14 +641,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_fields => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -730,14 +730,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_random => *bool*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -819,14 +819,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_result_limit => *int*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -908,14 +908,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_sort => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -997,14 +997,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   default_with_field_names => *bool*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1086,14 +1086,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   description => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1175,14 +1175,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   enable_search => *bool* (default: 1)
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1264,14 +1264,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   hooks => *hash*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1353,14 +1353,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   install => *bool* (default: 1)
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1442,14 +1442,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   langs => *array* (default: ["en_US"])
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1531,14 +1531,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   name* => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1620,14 +1620,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   package => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1709,14 +1709,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   summary => *str*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1798,14 +1798,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   table_data* => *any*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1887,14 +1887,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   table_spec* => *hash*
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -1976,14 +1976,14 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     *   word_search => *bool* (default: 0)
 
-        {en_US Generate function (and its metadata) to read table data}.
+        Generate function (and its metadata) to read table data.
 
-        {en_US The generated function acts like a simple single table SQL
-        SELECT query, featuring filtering, ordering, and paging, but using
+        The generated function acts like a simple single table SQL SELECT
+        query, featuring filtering, ordering, and paging, but using
         arguments as the 'query language'. The generated function is
         suitable for exposing a table data from an API function.
 
@@ -2065,7 +2065,7 @@ FUNCTIONS
             records with field matching (or not matching) certain value
             (regex) (or will be included. Function will return 400 if regex
             is invalid. These arguments will not be generated if
-            'filterable_regex' clause in field specification is set to 0. }
+            'filterable_regex' clause in field specification is set to 0.
 
     Return value:
 
@@ -2116,7 +2116,7 @@ AUTHOR
     Steven Haryanto <stevenharyanto@gmail.com>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2013 by Steven Haryanto.
+    This software is copyright (c) 2014 by Steven Haryanto.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.
