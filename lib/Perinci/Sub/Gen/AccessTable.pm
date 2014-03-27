@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.31'; # VERSION
+our $VERSION = '0.32'; # VERSION
 
 our %SPEC;
 
@@ -111,7 +111,9 @@ sub _add_table_desc_to_func_description {
         my $td = __("Data is in table form. Table fields are as follow:");
         $td .= "\n\n";
         my $ff = $table_spec->{fields};
-        for my $fn (sort {($ff->{$a}{index}//0) <=> ($ff->{$b}{index}//0)}
+        # reminder: index property is for older spec, will be removed someday
+        for my $fn (sort {($ff->{$a}{pos}//$ff->{$a}{index}//0) <=>
+                              ($ff->{$b}{pos}//$ff->{$b}{index}//0)}
                         keys %$ff) {
             my $f  = $ff->{$fn};
             my $fo = Perinci::Object::Metadata->new($f);
@@ -454,7 +456,9 @@ sub __parse_query {
     my $query = {args=>$args};
 
     my $fspecs = $table_spec->{fields};
-    my @fields = sort {$fspecs->{$a}{index} <=> $fspecs->{$b}{index}}
+    # reminder: index property is for older spec, will be removed someday
+    my @fields = sort {($fspecs->{$a}{pos}//$fspecs->{$a}{index}) <=>
+                           ($fspecs->{$b}{pos}//$fspecs->{$b}{index})}
         keys %$fspecs;
 
     my @requested_fields;
@@ -748,7 +752,9 @@ sub _gen_func {
                 # convert to array/scalar later when returning final data.
                 $r_h = {};
                 for my $f (keys %$fspecs) {
-                    $r_h->{$f} = $r0->[$fspecs->{$f}{index}];
+                    # reminder: index property is for older spec, will be
+                    # removed someday
+                    $r_h->{$f} = $r0->[$fspecs->{$f}{pos}//$fspecs->{$f}{index}];
                 }
             } elsif (ref($r0) eq 'HASH') {
                 $r_h = { %$r0 };
@@ -1044,6 +1050,8 @@ _
             summary => 'Table specification',
             description => <<'_',
 
+See `SHARYANTO::TableSpec` for more details.
+
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
 to be designated as the primary key. Currently only single-field PK is allowed.
@@ -1308,7 +1316,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.31
+version 0.32
 
 =head1 SYNOPSIS
 
@@ -1340,25 +1348,25 @@ In list_countries.pl:
              id => {
                  schema => 'str*',
                  summary => 'ISO 2-letter code for the country',
-                 index => 0,
+                 pos => 0,
                  sortable => 1,
              },
              eng_name => {
                  schema => 'str*',
                  summary => 'English name',
-                 index => 1,
+                 pos => 1,
                  sortable => 1,
              },
              ind_name => {
                  schema => 'str*',
                  summary => 'Indonesian name',
-                 index => 2,
+                 pos => 2,
                  sortable => 1,
              },
              tags => {
                  schema => 'array*',
                  summary => 'Keywords/tags',
-                 index => 3,
+                 pos => 3,
                  sortable => 0,
              },
          },
@@ -1730,6 +1738,8 @@ mentioned in filter arguments).
 
 Table specification.
 
+See C<SHARYANTO::TableSpec> for more details.
+
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
 to be designated as the primary key. Currently only single-field PK is allowed.
@@ -1754,14 +1764,8 @@ This will not have effect under 'custom_search'.
 
 Return value:
 
-Returns an enveloped result (an array).
+Returns an enveloped result (an array). First element (status) is an integer containing HTTP status code (200 means OK, 4xx caller error, 5xx function error). Second element (msg) is a string containing error message, or 'OK' if status is 200. Third element (result) is optional, the actual result. Fourth element (meta) is called result metadata and is optional, a hash that contains extra information.
 
-First element (status) is an integer containing HTTP status code
-(200 means OK, 4xx caller error, 5xx function error). Second element
-(msg) is a string containing error message, or 'OK' if status is
-200. Third element (result) is optional, the actual result. Fourth
-element (meta) is called result metadata and is optional, a hash
-that contains extra information.
 =head1 CAVEATS
 
 It is often not a good idea to expose your database schema directly as API.
