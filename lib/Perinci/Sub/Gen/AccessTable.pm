@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.32'; # VERSION
+our $VERSION = '0.33'; # VERSION
 
 our %SPEC;
 
@@ -153,6 +153,11 @@ sub _gen_meta {
         summary => $opts->{summary} // $table_spec->{summary} // "REPLACE ME",
         description => $opts->{description} // "REPLACE ME",
         args => {},
+        result => {
+            table => {
+                spec => $table_spec,
+            },
+        },
     };
 
     _add_table_desc_to_func_description($func_meta, $table_spec, $opts);
@@ -895,19 +900,7 @@ sub _gen_func {
         my $resmeta = {};
         my $res = [200, "OK", \@r, $resmeta];
 
-        my %rfopts = (
-            table_column_orders  => [$query->{requested_fields}],
-            # bool needs display hints
-            table_column_formats => [{
-                map { $_ => [[bool => {type=>'check'}]] }
-                    grep { $fspecs->{$_}{schema}[0] eq 'bool' }
-                        @{$query->{requested_fields}}
-                    }],
-        );
-        $resmeta->{result_format_options} = {
-            text          => \%rfopts,
-            "text-pretty" => \%rfopts,
-        };
+        $resmeta->{'table.fields'} = [$query->{requested_fields}];
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
@@ -1316,7 +1309,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.32
+version 0.33
 
 =head1 SYNOPSIS
 
@@ -1764,7 +1757,14 @@ This will not have effect under 'custom_search'.
 
 Return value:
 
-Returns an enveloped result (an array). First element (status) is an integer containing HTTP status code (200 means OK, 4xx caller error, 5xx function error). Second element (msg) is a string containing error message, or 'OK' if status is 200. Third element (result) is optional, the actual result. Fourth element (meta) is called result metadata and is optional, a hash that contains extra information.
+Returns an enveloped result (an array).
+
+First element (status) is an integer containing HTTP status code
+(200 means OK, 4xx caller error, 5xx function error). Second element
+(msg) is a string containing error message, or 'OK' if status is
+200. Third element (result) is optional, the actual result. Fourth
+element (meta) is called result metadata and is optional, a hash
+that contains extra information.
 
 =head1 CAVEATS
 
