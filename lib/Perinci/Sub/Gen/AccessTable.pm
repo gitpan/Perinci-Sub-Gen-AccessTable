@@ -19,7 +19,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.33'; # VERSION
+our $VERSION = '0.34'; # VERSION
 
 our %SPEC;
 
@@ -900,7 +900,7 @@ sub _gen_func {
         my $resmeta = {};
         my $res = [200, "OK", \@r, $resmeta];
 
-        $resmeta->{'table.fields'} = [$query->{requested_fields}];
+        $resmeta->{'table.fields'} = $query->{requested_fields};
 
         for ('before_return') {
             $hookargs{_func_res} = $res;
@@ -1309,7 +1309,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.33
+version 0.34
 
 =head1 SYNOPSIS
 
