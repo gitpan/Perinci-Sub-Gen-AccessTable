@@ -24,7 +24,9 @@ my %WriteMakefileArgs = (
   "LICENSE" => "perl",
   "NAME" => "Perinci::Sub::Gen::AccessTable",
   "PREREQ_PM" => {
-    "Data::Sah" => 0,
+    "Data::Sah" => "0.25",
+    "Data::Sah::Util::Type" => "0.25",
+    "DateTime" => 0,
     "Function::Fallback::CoreOrPP" => 0,
     "Lingua::EN::Numbers" => 0,
     "Lingua::ID::Nums2Words" => 0,
@@ -46,7 +48,7 @@ my %WriteMakefileArgs = (
     "IPC::Open3" => 0,
     "Test::More" => "0.96"
   },
-  "VERSION" => "0.36",
+  "VERSION" => "0.37",
   "test" => {
     "TESTS" => "t/*.t"
   }
@@ -54,7 +56,9 @@ my %WriteMakefileArgs = (
 
 
 my %FallbackPrereqs = (
-  "Data::Sah" => 0,
+  "Data::Sah" => "0.25",
+  "Data::Sah::Util::Type" => "0.25",
+  "DateTime" => 0,
   "File::Spec" => 0,
   "Function::Fallback::CoreOrPP" => 0,
   "IO::Handle" => 0,

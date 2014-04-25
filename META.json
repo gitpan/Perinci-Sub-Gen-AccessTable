@@ -30,7 +30,9 @@
       },
       "runtime" : {
          "requires" : {
-            "Data::Sah" : "0",
+            "Data::Sah" : "0.25",
+            "Data::Sah::Util::Type" : "0.25",
+            "DateTime" : "0",
             "Function::Fallback::CoreOrPP" : "0",
             "Lingua::EN::Numbers" : "0",
             "Lingua::ID::Nums2Words" : "0",
@@ -69,7 +71,7 @@
          "web" : "https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable"
       }
    },
-   "version" : "0.36",
+   "version" : "0.37",
    "x_Dist_Zilla" : {
       "perl" : {
          "version" : "5.018002"
@@ -176,9 +178,9 @@
             "version" : "5.015"
          },
          {
-            "class" : "Dist::Zilla::Plugin::SHARYANTO::OurPkgVersion",
-            "name" : "@Author::SHARYANTO/SHARYANTO::OurPkgVersion",
-            "version" : "0.02"
+            "class" : "Dist::Zilla::Plugin::OurDate",
+            "name" : "@Author::SHARYANTO/OurDate",
+            "version" : "0.01"
          },
          {
             "class" : "Dist::Zilla::Plugin::PodWeaver",
@@ -208,6 +210,11 @@
                         "class" : "Pod::Weaver::Section::Version",
                         "name" : "@Author::SHARYANTO/Version",
                         "version" : "4.006"
+                     },
+                     {
+                        "class" : "Pod::Weaver::Section::ReleaseDate",
+                        "name" : "@Author::SHARYANTO/ReleaseDate",
+                        "version" : "0.01"
                      },
                      {
                         "class" : "Pod::Weaver::Section::Region",
@@ -316,6 +323,11 @@
             "version" : "0.12"
          },
          {
+            "class" : "Dist::Zilla::Plugin::SHARYANTO::OurPkgVersion",
+            "name" : "@Author::SHARYANTO/SHARYANTO::OurPkgVersion",
+            "version" : "0.02"
+         },
+         {
             "class" : "Dist::Zilla::Plugin::Test::Compile",
             "config" : {
                "Dist::Zilla::Plugin::Test::Compile" : {
@@ -329,7 +341,7 @@
                }
             },
             "name" : "@Author::SHARYANTO/Test::Compile",
-            "version" : "2.039"
+            "version" : "2.040"
          },
          {
             "class" : "Dist::Zilla::Plugin::Test::Rinci",

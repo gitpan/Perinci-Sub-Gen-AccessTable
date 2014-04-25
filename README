@@ -3,7 +3,10 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.36
+    version 0.37
+
+RELEASE DATE
+    2014-04-25
 
 SYNOPSIS
     In list_countries.pl:
