@@ -3,10 +3,9 @@ NAME
     metadata) to access table data
 
 VERSION
-    version 0.37
-
-RELEASE DATE
-    2014-04-25
+    This document describes version 0.38 of Perinci::Sub::Gen::AccessTable
+    (from Perl distribution Perinci-Sub-Gen-AccessTable), released on
+    2014-05-06.
 
 SYNOPSIS
     In list_countries.pl:
@@ -270,10 +269,43 @@ FUNCTIONS
 
         Generated function's description.
 
+    *   enable_field_selection => *bool* (default: 1)
+
+        Decide whether generated function will support field selection (the
+        `fields` argument).
+
+    *   enable_filtering => *bool* (default: 1)
+
+        Decide whether generated function will support filtering (the FIELD,
+        FIELD.is, FIELD.min, etc arguments).
+
+    *   enable_ordering => *bool* (default: 1)
+
+        Decide whether generated function will support ordering (the `sort`
+        & `random` arguments).
+
+    *   enable_paging => *bool* (default: 1)
+
+        Decide whether generated function will support paging (the
+        `result_limit` & `result_start` arguments).
+
+    *   enable_random_ordering => *bool* (default: 1)
+
+        Decide whether generated function will support random ordering (the
+        `random` argument).
+
+        Ordering must also be enabled ("enable_ordering").
+
     *   enable_search => *bool* (default: 1)
 
         Decide whether generated function will support searching (argument
         q).
+
+        Filtering must also be enabled ("enable_filtering").
+
+    *   extra_args => *hash*
+
+        Extra arguments for the generated function.
 
     *   hooks => *hash*
 
@@ -376,7 +408,7 @@ FUNCTIONS
 
         Table specification.
 
-        See "SHARYANTO::TableSpec" for more details.
+        See "TableDef" for more details.
 
         A hashref with these required keys: 'fields', 'pk'. 'fields' is a
         hashref of field specification with field name as keys, while 'pk'
@@ -418,11 +450,15 @@ CAVEATS
 
 FAQ
   I want my function to accept additional arguments.
-    You can add arguments to the metadata by yourself, e.g.:
+    You can use the "extra_args" argument:
 
-     our %SPEC;
-     gen_read_table_func(name => 'myfunc', ...);
-     $SPEC{myfunc}{args}{add1} = {...};
+     gen_read_table_func(
+         name => 'myfunc',
+         extra_args => {
+             foo => {schema=>'int*'},
+             bar => {summary => 'Yet another arg for myfunc', schema=>'str*'},
+         },
+     );
 
     As for the implementation, you can specify hooks to do things with the
     extra arguments.

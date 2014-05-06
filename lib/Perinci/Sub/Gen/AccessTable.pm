@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.37'; # VERSION
+our $VERSION = '0.38'; # VERSION
 
 our %SPEC;
 
@@ -164,7 +164,7 @@ _
         cat_name    => 'field-selection',
         cat_text    => N__('field selection'),
         summary     => N__('Select fields to return'),
-    );
+    ) if $opts->{enable_field_selection};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -180,7 +180,7 @@ A list of field names separated by comma. Each field can be prefixed with '-' to
 specify descending order instead of the default ascending.
 
 _
-    ));
+    )) if $opts->{enable_ordering};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -190,7 +190,7 @@ _
         cat_name    => 'ordering',
         cat_text    => N__('ordering'),
         summary     => N__('Return records in random order'),
-    );
+    ) if $opts->{enable_ordering} && $opts->{enable_random_ordering};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -200,7 +200,7 @@ _
         cat_name    => 'paging',
         cat_text    => N__('paging'),
         summary     => N__('Only return a certain number of records'),
-    );
+    ) if $opts->{enable_paging};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -210,7 +210,7 @@ _
         cat_name    => 'paging',
         cat_text    => N__('paging'),
         summary     => N__("Only return starting from the n'th record"),
-    );
+    ) if $opts->{enable_paging};
     _add_arg(
         func_meta   => $func_meta,
         langs       => $langs,
@@ -219,7 +219,7 @@ _
         cat_name    => 'filtering',
         cat_text    => N__('filtering'),
         summary     => N__("Search"),
-    ) if $opts->{enable_search} // 1;
+    ) if $opts->{enable_filtering} && $opts->{enable_search};
 
     # add filter arguments for each table field
 
@@ -228,6 +228,7 @@ _
         my $fschema = $fspec->{schema};
         my $ftype   = $fschema->[0];
 
+        next unless $opts->{enable_filtering};
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
 
         _add_arg(
@@ -403,12 +404,18 @@ _
     } # for each fspec
 
     # custom filters
-    my $cff = $opts->{custom_filters} // {};
-    while (my ($cfn, $cf) = each %$cff) {
-        $func_args->{$cfn} and return [
-            400, "Custom filter '$cfn' clashes with another argument"];
-        $func_args->{$cfn} = $cf->{meta};
+    if ($opts->{enable_filtering}) {
+        my $cff = $opts->{custom_filters} // {};
+        while (my ($cfn, $cf) = each %$cff) {
+            $func_args->{$cfn} and return [
+                400, "Custom filter '$cfn' clashes with another argument"];
+            $func_args->{$cfn} = $cf->{meta};
+        }
     }
+
+    # extra arguments
+    my $ea = $opts->{extra_args} // {};
+    $func_args->{$_} = $ea->{$_} for keys %$ea;
 
     [200, "OK", $func_meta];
 }
@@ -1065,7 +1072,7 @@ _
             summary => 'Table specification',
             description => <<'_',
 
-See `SHARYANTO::TableSpec` for more details.
+See `TableDef` for more details.
 
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
@@ -1132,12 +1139,24 @@ _
             summary => "Supply default 'result_limit' ".
                 "value in generated function's metadata",
         },
+        enable_filtering => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "filtering (the FIELD, FIELD.is, FIELD.min, etc arguments)",
+        },
         enable_search => {
             schema => ['bool' => {
                 default => 1,
             }],
             summary => "Decide whether generated function will support ".
                 "searching (argument q)",
+            description => <<'_',
+
+Filtering must also be enabled (`enable_filtering`).
+
+_
         },
         word_search => {
             schema => ['bool' => {
@@ -1183,6 +1202,43 @@ the search term (from the function argument 'q'), and $opts is {ci=>0|1}. Code
 should return true if record matches search term.
 
 _
+        },
+        enable_ordering => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "ordering (the `sort` & `random` arguments)",
+        },
+        enable_random_ordering => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "random ordering (the `random` argument)",
+            description => <<'_',
+
+Ordering must also be enabled (`enable_ordering`).
+
+_
+        },
+        enable_paging => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "paging (the `result_limit` & `result_start` arguments)",
+        },
+        enable_field_selection => {
+            schema => ['bool' => {
+                default => 1,
+            }],
+            summary => "Decide whether generated function will support ".
+                "field selection (the `fields` argument)",
+        },
+        extra_args => {
+            schema => ['hash*'],
+            summary => 'Extra arguments for the generated function',
         },
         custom_filters => {
             schema => [hash => {of=>['hash*' => {keys=>{
@@ -1285,12 +1341,19 @@ sub gen_read_table_func {
         default_sort               => $args{default_sort},
         default_random             => $args{default_random},
         default_result_limit       => $args{default_result_limit},
+        enable_filtering           => $args{enable_filtering} // 1,
         enable_search              => $args{enable_search} // 1,
         custom_search              => $args{custom_search},
         word_search                => $args{word_search},
         case_insensitive_search    => $args{case_insensitive_search} // 1,
+        enable_ordering            => $args{enable_ordering} // 1,
+        enable_random_ordering     => ($args{enable_random_ordering} //
+                                           $args{enable_ordering} // 1),
+        enable_paging              => $args{enable_paging} // 1,
+        enable_field_selection     => $args{enable_field_selection} // 1,
         (map { ("default_$_" => $dav->{$_}) } keys %$dav),
         custom_filters             => $cff,
+        extra_args                 => $args{extra_args},
         hooks                      => $args{hooks} // {},
     };
 
@@ -1329,11 +1392,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-version 0.37
-
-=head1 RELEASE DATE
-
-2014-04-25
+This document describes version 0.38 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-05-06.
 
 =head1 SYNOPSIS
 
@@ -1656,9 +1715,37 @@ Supply default 'with_field_names' value in generated function's metadata.
 
 Generated function's description.
 
+=item * B<enable_field_selection> => I<bool> (default: 1)
+
+Decide whether generated function will support field selection (the `fields` argument).
+
+=item * B<enable_filtering> => I<bool> (default: 1)
+
+Decide whether generated function will support filtering (the FIELD, FIELD.is, FIELD.min, etc arguments).
+
+=item * B<enable_ordering> => I<bool> (default: 1)
+
+Decide whether generated function will support ordering (the `sort` & `random` arguments).
+
+=item * B<enable_paging> => I<bool> (default: 1)
+
+Decide whether generated function will support paging (the `result_limit` & `result_start` arguments).
+
+=item * B<enable_random_ordering> => I<bool> (default: 1)
+
+Decide whether generated function will support random ordering (the `random` argument).
+
+Ordering must also be enabled (C<enable_ordering>).
+
 =item * B<enable_search> => I<bool> (default: 1)
 
 Decide whether generated function will support searching (argument q).
+
+Filtering must also be enabled (C<enable_filtering>).
+
+=item * B<extra_args> => I<hash>
+
+Extra arguments for the generated function.
 
 =item * B<hooks> => I<hash>
 
@@ -1755,7 +1842,7 @@ mentioned in filter arguments).
 
 Table specification.
 
-See C<SHARYANTO::TableSpec> for more details.
+See C<TableDef> for more details.
 
 A hashref with these required keys: 'fields', 'pk'. 'fields' is a hashref of
 field specification with field name as keys, while 'pk' specifies which field is
@@ -1798,11 +1885,15 @@ It is often not a good idea to expose your database schema directly as API.
 
 =head2 I want my function to accept additional arguments.
 
-You can add arguments to the metadata by yourself, e.g.:
+You can use the C<extra_args> argument:
 
- our %SPEC;
- gen_read_table_func(name => 'myfunc', ...);
- $SPEC{myfunc}{args}{add1} = {...};
+ gen_read_table_func(
+     name => 'myfunc',
+     extra_args => {
+         foo => {schema=>'int*'},
+         bar => {summary => 'Yet another arg for myfunc', schema=>'str*'},
+     },
+ );
 
 As for the implementation, you can specify hooks to do things with the extra
 arguments.
