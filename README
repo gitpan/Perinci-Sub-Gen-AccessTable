@@ -3,9 +3,9 @@ NAME
     metadata) to access table data
 
 VERSION
-    This document describes version 0.38 of Perinci::Sub::Gen::AccessTable
+    This document describes version 0.39 of Perinci::Sub::Gen::AccessTable
     (from Perl distribution Perinci-Sub-Gen-AccessTable), released on
-    2014-05-06.
+    2014-06-29.
 
 SYNOPSIS
     In list_countries.pl:
@@ -375,7 +375,7 @@ FUNCTIONS
 
         Generated function's summary.
 
-    *   table_data* => *any*
+    *   table_data* => *array|code*
 
         Data.
 
@@ -443,6 +443,8 @@ FUNCTIONS
     element (result) is optional, the actual result. Fourth element (meta)
     is called result metadata and is optional, a hash that contains extra
     information.
+
+    A hash containing generated function, metadata (hash)
 
 CAVEATS
     It is often not a good idea to expose your database schema directly as

@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.38'; # VERSION
+our $VERSION = '0.39'; # VERSION
 
 our %SPEC;
 
@@ -231,6 +231,18 @@ _
         next unless $opts->{enable_filtering};
         next if defined($fspec->{filterable}) && !$fspec->{filterable};
 
+        unless ($fspec->{include_by_default} // 1) {
+            _add_arg(
+                func_meta   => $func_meta,
+                langs       => $langs,
+                name        => "with.$fname",
+                type        => "bool",
+                default     => 0,
+                cat_name    => "field-selection",
+                cat_text    => N__('field selection'),
+                summary     => N__("Show field '{field}'"),
+            );
+        }
         _add_arg(
             func_meta   => $func_meta,
             langs       => $langs,
@@ -432,7 +444,10 @@ sub __parse_query {
 
     my @requested_fields;
     if ($args->{detail}) {
-        @requested_fields = @fields;
+        @requested_fields = grep {
+            ($fspecs->{$_}{include_by_default} // 1) ||
+                $args->{"with.$_"}
+            } @fields;
         $args->{with_field_names} //= 1;
     } elsif ($args->{fields}) {
         @requested_fields = @{ $args->{fields} };
@@ -1038,7 +1053,7 @@ _
         %Perinci::Sub::Gen::common_args,
         table_data => {
             req => 1,
-            schema => 'any*',
+            schema => ['any*' => of => ['array*', 'code*']],
             summary => 'Data',
             description => <<'_',
 
@@ -1280,6 +1295,12 @@ case, the function will return with this return value.
 
 _
         },
+    }, # args
+    result => {
+        summary => 'A hash containing generated function, metadata',
+        schema => 'hash*',
+        description => <<'_',
+_
     },
 };
 sub gen_read_table_func {
@@ -1392,7 +1413,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-This document describes version 0.38 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-05-06.
+This document describes version 0.39 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-06-29.
 
 =head1 SYNOPSIS
 
@@ -1812,7 +1833,7 @@ If not specified, caller's package will be used by default.
 
 Generated function's summary.
 
-=item * B<table_data>* => I<any>
+=item * B<table_data>* => I<array|code>
 
 Data.
 
@@ -1876,6 +1897,8 @@ First element (status) is an integer containing HTTP status code
 200. Third element (result) is optional, the actual result. Fourth
 element (meta) is called result metadata and is optional, a hash
 that contains extra information.
+
+A hash containing generated function, metadata (hash)
 
 =head1 CAVEATS
 
