@@ -20,7 +20,7 @@ require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
 
-our $VERSION = '0.39'; # VERSION
+our $VERSION = '0.40'; # VERSION
 
 our %SPEC;
 
@@ -1413,7 +1413,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-This document describes version 0.39 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-06-29.
+This document describes version 0.40 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-07-22.
 
 =head1 SYNOPSIS
 
@@ -1536,136 +1536,84 @@ arguments.
 
 =over
 
-=item *
+=item * I<with_field_names> => BOOL (default 1)
 
-I<with_field_names> => BOOL (default 1)
+If set to 1, function will return records of field values along with field
+names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
+set to 0, then function will return record containing field values without
+field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
 
-  If set to 1, function will return records of field values along with field
-  names (hashref), e.g. {id=>'ID', country=>'Indonesia', capital=>'Jakarta'}. If
-  set to 0, then function will return record containing field values without
-  field names (arrayref) instead, e.g.: ['ID', 'Indonesia', 'Jakarta'].
+=item * I<detail> => BOOL (default 0)
 
+This is a field selection option. If set to 0, function will return PK field
+only. If this argument is set to 1, then all fields will be returned (see also
+I<fields> to instruct function to return some fields only).
 
+=item * I<fields> => ARRAY
 
-=item *
+This is a field selection option. If you only want certain fields, specify
+them here (see also I<detail>).
 
-I<detail> => BOOL (default 0)
+=item * I<result_limit> => INT (default undef)
 
-  This is a field selection option. If set to 0, function will return PK field
-  only. If this argument is set to 1, then all fields will be returned (see also
-  I<fields> to instruct function to return some fields only).
+=item * I<result_start> => INT (default 1)
 
+The I<result_limit> and I<result_start> arguments are paging options, they work
+like LIMIT clause in SQL, except that index starts at 1 and not 0. For
+example, to return the first 20 records in the result, set I<result_limit> to
+20 . To return the next 20 records, set I<result_limit> to 20 and
+I<result_start> to 21.
 
+=item * I<random> => BOOL (default 0)
 
-=item *
+The random argument is an ordering option. If set to true, order of records
+returned will be shuffled first. This happened before paging.
 
-I<fields> => ARRAY
+=item * I<sort> => STR
 
-  This is a field selection option. If you only want certain fields, specify
-  them here (see also I<detail>).
+The sort argument is an ordering option, containing name of field. A - prefix
+signifies descending instead of ascending order. Multiple fields are allowed,
+separated by comma.
 
+=item * I<q> => STR
 
+A filtering option. By default, all fields except those specified with
+searchable=0 will be searched using simple case-insensitive string search.
+There are a few options to customize this, using these gen arguments:
+I<word_search>, I<case_insensitive_search>, and I<custom_search>.
 
-=item *
+=item * Filter arguments
 
-I<result_limit> => INT (default undef)
+They will be generated for each field, except when field has 'filterable'
+clause set to false.
 
+Undef values will not match any filter, just like NULL in SQL.
 
+=over
 
-=item *
+=item * I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
+field equalling (or not equalling) value exactly ('==' or 'eq') will be
+included. If doesn't clash with other function arguments, I<FIELD> will also
+be added as an alias for I<FIELD.is>.
 
-I<result_start> => INT (default 1)
-
-  The I<result_limit> and I<result_start> arguments are paging options, they work
-  like LIMIT clause in SQL, except that index starts at 1 and not 0. For
-  example, to return the first 20 records in the result, set I<result_limit> to
-  20 . To return the next 20 records, set I<result_limit> to 20 and
-  I<result_start> to 21.
-
-
-
-=item *
-
-I<random> => BOOL (default 0)
-
-  The random argument is an ordering option. If set to true, order of records
-  returned will be shuffled first. This happened before paging.
-
-
-
-=item *
-
-I<sort> => STR
-
-  The sort argument is an ordering option, containing name of field. A - prefix
-  signifies descending instead of ascending order. Multiple fields are allowed,
-  separated by comma.
-
-
-
-=item *
-
-I<q> => STR
-
-  A filtering option. By default, all fields except those specified with
-  searchable=0 will be searched using simple case-insensitive string search.
-  There are a few options to customize this, using these gen arguments:
-  I<word_search>, I<case_insensitive_search>, and I<custom_search>.
-
-
-
-=item *
-
-Filter arguments
-
-  They will be generated for each field, except when field has 'filterable'
-  clause set to false.
-
-  Undef values will not match any filter, just like NULL in SQL.
-
-
-
-=item *
-
-I<FIELD.is> and I<FIELD.isnt> arguments for each field. Only records with
- field equalling (or not equalling) value exactly ('==' or 'eq') will be
- included. If doesn't clash with other function arguments, I<FIELD> will also
- be added as an alias for I<FIELD.is>.
-
-
-
-=item *
-
-I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
+=item * I<FIELD.has> and I<FIELD.lacks> array arguments for each set field. Only
 records with field having or lacking certain value will be included.
 
-
-
-=item *
-
-I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
+=item * I<FIELD.min> and I<FIELD.max> for each int/float/str field. Only records with
 field greater/equal than, or less/equal than a certain value will be
 included.
 
-
-
-=item *
-
-I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
+=item * I<FIELD.contains> and I<FIELD.not_contains> for each str field. Only records
 with field containing (or not containing) certain value (substring) will be
 included.
 
-
-
-=item *
-
-I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
+=item * I<FIELD.matches> and I<FIELD.not_matches> for each str field. Only records
 with field matching (or not matching) certain value (regex) (or will be
 included. Function will return 400 if regex is invalid. These arguments will
 not be generated if 'filterable_regex' clause in field specification is set
 to 0.
 
-
+=back
 
 =back
 
@@ -1705,8 +1653,8 @@ Specify defaults for generated function's arguments.
 
 Can be used to supply default filters, e.g.
 
-    # limit years for credit card expiration date
-    { "year.min" => $curyear, "year.max" => $curyear+10, }
+ # limit years for credit card expiration date
+ { "year.min" =E<gt> $curyear, "year.max" =E<gt> $curyear+10, }
 
 =item * B<default_detail> => I<bool>
 
@@ -1800,21 +1748,21 @@ false to skip installing.
 Choose language for function metadata.
 
 This function can generate metadata containing text from one or more languages.
-For example if you set 'langs' to ['enI<US', 'id>ID'] then the generated function
+For example if you set 'langs' to ['en_US', 'id_ID'] then the generated function
 metadata might look something like this:
 
-    {
-        v => 1.1,
-        args => {
-            random => {
-                summary => 'Random order of results', # English
-                "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
-                ...
-            },
-            ...
-        },
-        ...
-    }
+ {
+     v =E<gt> 1.1,
+     args =E<gt> {
+         random =E<gt> {
+             summary =E<gt> 'Random order of results', # English
+             "summary.alt.lang.id_ID" =E<gt> "Acak urutan hasil", # Indonesian
+             ...
+         },
+         ...
+     },
+     ...
+ }
 
 =item * B<name>* => I<str>
 
@@ -1853,10 +1801,10 @@ efforts.
 
 '$query' is a hashref which contains information about the query, e.g. 'args'
 (the original arguments passed to the generated function, e.g. {random=>1,
-resultI<limit=>1, field1>match=>'f.+'}), 'mentionedI<fields' which lists fields
+result_limit=>1, field1_match=>'f.+'}), 'mentioned_fields' which lists fields
 that are mentioned in either filtering arguments or fields or ordering,
-'requested>fields' (fields mentioned in list of fields to be returned),
-'sortI<fields' (fields mentioned in sort arguments), 'filter>fields' (fields
+'requested_fields' (fields mentioned in list of fields to be returned),
+'sort_fields' (fields mentioned in sort arguments), 'filter_fields' (fields
 mentioned in filter arguments).
 
 =item * B<table_spec>* => I<hash>
@@ -1881,7 +1829,7 @@ true).
 Decide whether generated function will perform word searching instead of string searching.
 
 For example, if search term is 'pine' and field value is 'green pineapple',
-search will match if wordI<search=false, but won't match under word>search.
+search will match if word_search=false, but won't match under word_search.
 
 This will not have effect under 'custom_search'.
 
