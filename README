@@ -3,9 +3,9 @@ NAME
     metadata) to access table data
 
 VERSION
-    This document describes version 0.40 of Perinci::Sub::Gen::AccessTable
+    This document describes version 0.41 of Perinci::Sub::Gen::AccessTable
     (from Perl distribution Perinci-Sub-Gen-AccessTable), released on
-    2014-07-22.
+    2014-09-17.
 
 SYNOPSIS
     In list_countries.pl:
@@ -481,7 +481,7 @@ HOMEPAGE
 
 SOURCE
     Source repository is at
-    <https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable>.
+    <https://github.com/perlancar/perl-Perinci-Sub-Gen-AccessTable>.
 
 BUGS
     Please report any bugs or feature requests on the bugtracker website
@@ -492,10 +492,10 @@ BUGS
     to an existing test-file that illustrates the bug or desired feature.
 
 AUTHOR
-    Steven Haryanto <stevenharyanto@gmail.com>
+    perlancar <perlancar@cpan.org>
 
 COPYRIGHT AND LICENSE
-    This software is copyright (c) 2014 by Steven Haryanto.
+    This software is copyright (c) 2014 by perlancar@cpan.org.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.

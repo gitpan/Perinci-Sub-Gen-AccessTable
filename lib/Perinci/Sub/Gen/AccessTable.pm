@@ -1,5 +1,8 @@
 package Perinci::Sub::Gen::AccessTable;
 
+our $DATE = '2014-09-17'; # DATE
+our $VERSION = '0.41'; # VERSION
+
 use 5.010001;
 use strict;
 use warnings;
@@ -12,15 +15,13 @@ use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use SHARYANTO::Locale::Util qw(:locale_h);
+use SHARYANTO::Locale::Util qw(:locale_h setlocale);
 use Scalar::Util qw(reftype);
 #use SHARYANTO::String::Util qw(trim_blank_lines);
 
 require Exporter;
 our @ISA       = qw(Exporter);
 our @EXPORT_OK = qw(gen_read_table_func);
-
-our $VERSION = '0.40'; # VERSION
 
 our %SPEC;
 
@@ -1413,7 +1414,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-This document describes version 0.40 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-07-22.
+This document describes version 0.41 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-09-17.
 
 =head1 SYNOPSIS
 
@@ -1881,7 +1882,7 @@ Please visit the project's homepage at L<https://metacpan.org/release/Perinci-Su
 
 =head1 SOURCE
 
-Source repository is at L<https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable>.
+Source repository is at L<https://github.com/perlancar/perl-Perinci-Sub-Gen-AccessTable>.
 
 =head1 BUGS
 
@@ -1893,11 +1894,11 @@ feature.
 
 =head1 AUTHOR
 
-Steven Haryanto <stevenharyanto@gmail.com>
+perlancar <perlancar@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2014 by Steven Haryanto.
+This software is copyright (c) 2014 by perlancar@cpan.org.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
