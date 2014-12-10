@@ -1,7 +1,7 @@
 package Perinci::Sub::Gen::AccessTable;
 
-our $DATE = '2014-09-17'; # DATE
-our $VERSION = '0.41'; # VERSION
+our $DATE = '2014-12-10'; # DATE
+our $VERSION = '0.42'; # VERSION
 
 use 5.010001;
 use strict;
@@ -11,13 +11,13 @@ use Log::Any '$log';
 
 use Function::Fallback::CoreOrPP qw(clone);
 use List::Util qw(shuffle);
+use Locale::Set qw(:locale_h setlocale);
 use Locale::TextDomain::UTF8 'Perinci-Sub-Gen-AccessTable';
 use Perinci::Object::Metadata;
 use Perinci::Sub::Gen;
 use Perinci::Sub::Util qw(err);
-use SHARYANTO::Locale::Util qw(:locale_h setlocale);
 use Scalar::Util qw(reftype);
-#use SHARYANTO::String::Util qw(trim_blank_lines);
+#use String::Trim::More qw(trim_blank_lines);
 
 require Exporter;
 our @ISA       = qw(Exporter);
@@ -1414,7 +1414,7 @@ Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to a
 
 =head1 VERSION
 
-This document describes version 0.41 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-09-17.
+This document describes version 0.42 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-12-10.
 
 =head1 SYNOPSIS
 
@@ -1517,8 +1517,6 @@ metadata) that accepts arguments for specifying fields, filtering, sorting, and
 paging. The resulting function can then be run via command-line using
 L<Perinci::CmdLine> (as demonstrated in Synopsis), or served via HTTP using
 L<Perinci::Access::HTTP::Server>, or consumed normally by Perl programs.
-
-This module uses L<Log::Any> for logging.
 
 =head1 FUNCTIONS
 
@@ -1655,7 +1653,7 @@ Specify defaults for generated function's arguments.
 Can be used to supply default filters, e.g.
 
  # limit years for credit card expiration date
- { "year.min" =E<gt> $curyear, "year.max" =E<gt> $curyear+10, }
+ { "year.min" => $curyear, "year.max" => $curyear+10, }
 
 =item * B<default_detail> => I<bool>
 
@@ -1753,11 +1751,11 @@ For example if you set 'langs' to ['en_US', 'id_ID'] then the generated function
 metadata might look something like this:
 
  {
-     v =E<gt> 1.1,
-     args =E<gt> {
-         random =E<gt> {
-             summary =E<gt> 'Random order of results', # English
-             "summary.alt.lang.id_ID" =E<gt> "Acak urutan hasil", # Indonesian
+     v => 1.1,
+     args => {
+         random => {
+             summary => 'Random order of results', # English
+             "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
              ...
          },
          ...
@@ -1765,7 +1763,7 @@ metadata might look something like this:
      ...
  }
 
-=item * B<name>* => I<str>
+=item * B<name> => I<str>
 
 Generated function's name, e.g. `myfunc`.
 

@@ -3,9 +3,9 @@ NAME
     metadata) to access table data
 
 VERSION
-    This document describes version 0.41 of Perinci::Sub::Gen::AccessTable
+    This document describes version 0.42 of Perinci::Sub::Gen::AccessTable
     (from Perl distribution Perinci-Sub-Gen-AccessTable), released on
-    2014-09-17.
+    2014-12-10.
 
 SYNOPSIS
     In list_countries.pl:
@@ -107,8 +107,6 @@ DESCRIPTION
     command-line using Perinci::CmdLine (as demonstrated in Synopsis), or
     served via HTTP using Perinci::Access::HTTP::Server, or consumed
     normally by Perl programs.
-
-    This module uses Log::Any for logging.
 
 FUNCTIONS
   gen_read_table_func(%args) -> [status, msg, result, meta]
@@ -242,7 +240,7 @@ FUNCTIONS
         Can be used to supply default filters, e.g.
 
          # limit years for credit card expiration date
-         { "year.min" =E<gt> $curyear, "year.max" =E<gt> $curyear+10, }
+         { "year.min" => $curyear, "year.max" => $curyear+10, }
 
     *   default_detail => *bool*
 
@@ -351,11 +349,11 @@ FUNCTIONS
         the generated function metadata might look something like this:
 
          {
-             v =E<gt> 1.1,
-             args =E<gt> {
-                 random =E<gt> {
-                     summary =E<gt> 'Random order of results', # English
-                     "summary.alt.lang.id_ID" =E<gt> "Acak urutan hasil", # Indonesian
+             v => 1.1,
+             args => {
+                 random => {
+                     summary => 'Random order of results', # English
+                     "summary.alt.lang.id_ID" => "Acak urutan hasil", # Indonesian
                      ...
                  },
                  ...
@@ -363,7 +361,7 @@ FUNCTIONS
              ...
          }
 
-    *   name* => *str*
+    *   name => *str*
 
         Generated function's name, e.g. `myfunc`.
 
