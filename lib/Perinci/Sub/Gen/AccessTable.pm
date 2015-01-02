@@ -1,7 +1,7 @@
 package Perinci::Sub::Gen::AccessTable;
 
-our $DATE = '2014-12-10'; # DATE
-our $VERSION = '0.42'; # VERSION
+our $DATE = '2015-01-02'; # DATE
+our $VERSION = '0.43'; # VERSION
 
 use 5.010001;
 use strict;
@@ -738,8 +738,8 @@ sub _gen_func {
 
         if (grep { $_->[1] eq 'date' } @{ $query->{filters} }) {
             require DateTime;
-            require Data::Sah::Util::Type;
-            Data::Sah::Util::Type->import('coerce_date');
+            require Data::Sah::Util::Type::Date;
+            Data::Sah::Util::Type::Date->import('coerce_date');
         }
 
       REC:
@@ -1400,7 +1400,7 @@ sub gen_read_table_func {
 }
 
 1;
-# ABSTRACT: Generate function (and its Rinci metadata) to access table data
+# ABSTRACT: Generate function (and its metadata) to read table data
 
 __END__
 
@@ -1410,11 +1410,11 @@ __END__
 
 =head1 NAME
 
-Perinci::Sub::Gen::AccessTable - Generate function (and its Rinci metadata) to access table data
+Perinci::Sub::Gen::AccessTable - Generate function (and its metadata) to read table data
 
 =head1 VERSION
 
-This document describes version 0.42 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2014-12-10.
+This document describes version 0.43 of Perinci::Sub::Gen::AccessTable (from Perl distribution Perinci-Sub-Gen-AccessTable), released on 2015-01-02.
 
 =head1 SYNOPSIS
 
@@ -1742,7 +1742,7 @@ By default, generated function will be installed to the specified (or caller's)
 package, as well as its generated metadata into %SPEC. Set this argument to
 false to skip installing.
 
-=item * B<langs> => I<array> (default: ["en_US"])
+=item * B<langs> => I<array[str]> (default: ["en_US"])
 
 Choose language for function metadata.
 
@@ -1834,8 +1834,6 @@ This will not have effect under 'custom_search'.
 
 =back
 
-Return value:
-
 Returns an enveloped result (an array).
 
 First element (status) is an integer containing HTTP status code
@@ -1845,8 +1843,7 @@ First element (status) is an integer containing HTTP status code
 element (meta) is called result metadata and is optional, a hash
 that contains extra information.
 
-A hash containing generated function, metadata (hash)
-
+Return value: A hash containing generated function, metadata (hash)
 =head1 CAVEATS
 
 It is often not a good idea to expose your database schema directly as API.
@@ -1880,7 +1877,7 @@ Please visit the project's homepage at L<https://metacpan.org/release/Perinci-Su
 
 =head1 SOURCE
 
-Source repository is at L<https://github.com/perlancar/perl-Perinci-Sub-Gen-AccessTable>.
+Source repository is at L<https://github.com/sharyanto/perl-Perinci-Sub-Gen-AccessTable>.
 
 =head1 BUGS
 
@@ -1896,7 +1893,7 @@ perlancar <perlancar@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2014 by perlancar@cpan.org.
+This software is copyright (c) 2015 by perlancar@cpan.org.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
